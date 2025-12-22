@@ -20,7 +20,7 @@ import LoanMarket from './pages/LoanMarket';
 const queryClient = new QueryClient();
 
 // Initialize socket connection outside to avoid multiple connections across re-renders
-const socket = io('http://localhost:3001');
+const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001');
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
