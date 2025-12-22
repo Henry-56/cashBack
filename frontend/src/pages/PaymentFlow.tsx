@@ -59,14 +59,14 @@ export default function PaymentFlow() {
             {step === 2 && (
                 <Step2PaymentAmount
                     amount={formData.amount}
-                    onUpdate={(amt) => updateData({ amount: amt })}
+                    onUpdate={(amt: number) => updateData({ amount: amt })}
                     onNext={nextStep}
                 />
             )}
             {step === 3 && (
                 <Step3Method
                     method={formData.method}
-                    onUpdate={(m) => updateData({ method: m })}
+                    onUpdate={(m: string) => updateData({ method: m })}
                     onNext={nextStep}
                 />
             )}
