@@ -12,5 +12,13 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "drizzle.config.ts",
+    "prisma",
+    "test-*.js",
+    "*.config.js"
+  ]
 }
