@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { WizardLayout } from '../components/WizardLayout';
 import { Step1SelectLoan } from './payment/Step1SelectLoan';
 import { Step2PaymentAmount } from './payment/Step2PaymentAmount';
@@ -7,14 +7,20 @@ import { Step3Method } from './payment/Step3Method';
 import { Step4Confirm } from './payment/Step4Confirm';
 
 export default function PaymentFlow() {
-    const [step, setStep] = useState(1);
+    const { loanId } = useParams();
+    // If loanId is present in URL, start at step 2, otherwise step 1
+    const [step, setStep] = useState(loanId ? 2 : 1);
     const [formData, setFormData] = useState({
-        loanId: '',
+        loanId: loanId || '',
         amount: 0,
         method: 'BANK_TRANSFER', // Default
     });
     const [paymentResult, setPaymentResult] = useState<any>(null);
     const navigate = useNavigate();
+
+    // If we have a loanId, we might want to fetch loan details to set default amount? 
+    // For now, logic remains minimal.
+
 
     const nextStep = () => setStep(s => s + 1);
     const prevStep = () => setStep(s => s - 1);

@@ -110,6 +110,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/pay/:loanId"
+        element={
+          <ProtectedRoute>
+            <PaymentFlow />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/loans"
         element={
           <ProtectedRoute>
