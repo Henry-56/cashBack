@@ -144,7 +144,9 @@ export default function Dashboard() {
                 } as Loan, ...prev];
             });
         });
-        return () => socket.disconnect();
+        return () => {
+            socket.disconnect();
+        };
     }, [user]);
 
     const activeDebts = borrowedLoans.filter(l => l.status === 'ACTIVE' || l.status === 'APPROVED' || l.status === 'AWAITING_CONFIRMATION');
