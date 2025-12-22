@@ -22,7 +22,7 @@ const queryClient = new QueryClient();
 // Initialize socket connection outside to avoid multiple connections across re-renders
 const socket = io('http://localhost:3001');
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
