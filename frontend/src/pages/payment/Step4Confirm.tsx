@@ -20,8 +20,8 @@ export const Step4Confirm: React.FC<Step4Props> = ({ data, onSubmit, result }) =
                     S/.{data.amount}
                 </h2>
 
-                <p className="text-[var(--primary)] text-xl font-bold mb-12">
-                    pago validado
+                <p className="text-[var(--primary)] text-xl font-bold mb-12 text-center">
+                    Pago enviado a revisión
                 </p>
 
                 <div className="w-full space-y-4 pb-12 mt-auto">

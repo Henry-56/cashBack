@@ -1,10 +1,4 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { WizardLayout } from '../components/WizardLayout';
-import { Step1SelectLoan } from './payment/Step1SelectLoan';
-import { Step2PaymentAmount } from './payment/Step2PaymentAmount';
-import { Step3Method } from './payment/Step3Method';
-import { Step4Confirm } from './payment/Step4Confirm';
+import { Step3Upload } from './payment/Step3Upload';
 
 export default function PaymentFlow() {
     const { loanId } = useParams();
@@ -15,12 +9,9 @@ export default function PaymentFlow() {
         amount: 0,
         method: 'BANK_TRANSFER', // Default
     });
+    const [file, setFile] = useState<File | null>(null);
     const [paymentResult, setPaymentResult] = useState<any>(null);
     const navigate = useNavigate();
-
-    // If we have a loanId, we might want to fetch loan details to set default amount? 
-    // For now, logic remains minimal.
-
 
     const nextStep = () => setStep(s => s + 1);
     const prevStep = () => setStep(s => s - 1);
@@ -31,13 +22,13 @@ export default function PaymentFlow() {
 
     const handleSubmit = async () => {
         try {
-            // Implement API call in next phase or mocked here
-            // const response = await api.post('/payments', formData);
-            // setPaymentResult(response.data);
-            // For now, mock success to show flow
+            // Here we would upload the file and call the API
+            console.log("Submitting payment with file:", file);
+
             setTimeout(() => {
                 setPaymentResult({ status: 'COMPLETED', reference: 'TXN-mock-123' });
-                nextStep();
+                // We are already at step 4 (the confirm step logic is inside Step4Confirm or we transition to it)
+                // Actually, the wizard expects step 4 to render Step4Confirm.
             }, 1000);
         } catch (error) {
             alert("Error al procesar el pago");
@@ -64,17 +55,21 @@ export default function PaymentFlow() {
                 />
             )}
             {step === 3 && (
-                <Step3Method
-                    method={formData.method}
-                    onUpdate={(m: string) => updateData({ method: m })}
-                    onNext={nextStep}
+                <Step3Upload
+                    setFile={setFile}
+                    onNext={() => {
+                        handleSubmit(); // Submit immediately after upload confirmation? Or go to review? 
+                        // User said "logic is the same... upload proof". usually you upload then confirm.
+                        // Let's go to step 4 which shows success/validation.
+                        nextStep();
+                    }}
                 />
             )}
             {step === 4 && (
                 <Step4Confirm
                     data={formData}
-                    onSubmit={handleSubmit}
-                    result={paymentResult}
+                    onSubmit={() => { }} // Already submitted
+                    result={{ status: 'COMPLETED' }} // Force success state for now
                 />
             )}
         </WizardLayout>
