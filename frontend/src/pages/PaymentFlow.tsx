@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { WizardLayout } from '../components/WizardLayout';
 import { Step1SelectLoan } from './payment/Step1SelectLoan';
