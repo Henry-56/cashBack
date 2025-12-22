@@ -128,7 +128,7 @@ export default function Dashboard() {
 
     // Socket Listener copied from duplicate check logic
     useEffect(() => {
-        const socket = io('http://localhost:3001');
+        const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001');
         socket.on('new_loan_request', (data: any) => {
             if (user && data.userId === user.id) return;
 
