@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #023440;
+  --primary-light: #006D77;
+  --accent: #D4E157;
+  --bg-light: #F5F7FA;
+}
+
+body {
+  background-color: var(--bg-light);
+  color: #023440;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Hide scrollbar for horizontal scrolling areas */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

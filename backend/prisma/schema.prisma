@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://neondb_owner:npg_n1mlbW3zewHc@ep-shiny-tooth-a41uen9s-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  phone             String?
+  full_name         String
+  password_hash     String
+  profile_picture_url String?
+  rating            Decimal   @default(5.0) @db.Decimal(2, 1)
+  
+  loans             Loan[]
+  documents         Document[]
+  
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  @@map("users")
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVE
+  COMPLETED
+  DEFAULTED
+}
+
+model Loan {
+  id                  String     @id @default(uuid())
+  user_id             String
+  user                User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  amount_requested    Decimal    @db.Decimal(10, 2) // Original requested
+  net_amount          Decimal    @db.Decimal(10, 2) // Received (95%)
+  platform_commission Decimal    @db.Decimal(10, 2) // Fee (5%)
+  
+  interest_rate       Decimal    @db.Decimal(5, 2) // Annual %
+  term_months         Int
+  total_amount_due    Decimal    @db.Decimal(10, 2) // Principal + Interest
+  
+  status              LoanStatus @default(PENDING)
+  approved_at         DateTime?
+  rejection_reason    String?
+  
+  payments            Payment[]
+  documents           Document[]
+  
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+
+  @@map("loans")
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  MOBILE_PAYMENT
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Payment {
+  id                    String        @id @default(uuid())
+  loan_id               String
+  loan                  Loan          @relation(fields: [loan_id], references: [id], onDelete: Cascade)
+  
+  amount_paid           Decimal       @db.Decimal(10, 2)
+  payment_method        PaymentMethod
+  payment_date          DateTime      @default(now())
+  status                PaymentStatus @default(PENDING)
+  transaction_reference String?
+  
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+enum DocumentType {
+  ID
+  PROOF_OF_INCOME
+  BANK_STATEMENT
+  OTHER
+}
+
+model Document {
+  id            String       @id @default(uuid())
+  user_id       String?
+  user          User?        @relation(fields: [user_id], references: [id])
+  loan_id       String?
+  loan          Loan?        @relation(fields: [loan_id], references: [id])
+  
+  document_type DocumentType
+  file_url      String
+  
+  uploaded_at   DateTime     @default(now())
+
+  @@map("documents")
+}
+
+model LoanOffer {
+  id                 String  @id @default(uuid())
+  amount             Decimal @db.Decimal(10, 2)
+  min_term_months    Int
+  max_term_months    Int
+  base_interest_rate Decimal @db.Decimal(5, 2)
+  description        String
+  active             Boolean @default(true)
+
+  @@map("loan_offers")
+}
