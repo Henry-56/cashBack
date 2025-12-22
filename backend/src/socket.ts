@@ -6,8 +6,13 @@ let io: SocketIOServer;
 export const initSocket = (httpServer: HttpServer) => {
     io = new SocketIOServer(httpServer, {
         cors: {
-            origin: "*", // Allow all origins for now (dev)
-            methods: ["GET", "POST"]
+            origin: [
+                "http://localhost:5173",
+                "https://cashback-kappa.vercel.app",
+                "https://cashback-phjt.onrender.com"
+            ],
+            methods: ["GET", "POST"],
+            credentials: true
         }
     });
 
