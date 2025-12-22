@@ -13,7 +13,6 @@ interface Step2Props {
 
 export const Step2Review: React.FC<Step2Props> = ({ data, onSubmit }) => {
     const navigate = useNavigate();
-    const commission = data.amount * 0.05;
 
     return (
         <div className="min-h-screen bg-[var(--bg-light)]">

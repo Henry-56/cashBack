@@ -1,6 +1,5 @@
 import React from 'react';
-import { MoneyInput } from '../../components/MoneyInput';
-import { X, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Step1Props {

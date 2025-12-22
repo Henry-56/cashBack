@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { WizardLayout } from '../components/WizardLayout';
 import { Step1Amount } from './steps/Step1Amount';
@@ -74,7 +74,6 @@ export default function LoanRequest() {
             {step === 3 && loanResult && (
                 <Step3Success
                     loan={loanResult.loan}
-                    commission={loanResult.breakdown.commission}
                 />
             )}
         </WizardLayout>

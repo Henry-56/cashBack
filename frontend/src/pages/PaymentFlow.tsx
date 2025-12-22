@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WizardLayout } from '../components/WizardLayout';
 import { Step1SelectLoan } from './payment/Step1SelectLoan';
 import { Step2PaymentAmount } from './payment/Step2PaymentAmount';
 import { Step3Method } from './payment/Step3Method';
 import { Step4Confirm } from './payment/Step4Confirm';
-import { useAuth } from '../context/AuthContext';
-import api from '../api/client';
 
 export default function PaymentFlow() {
     const [step, setStep] = useState(1);

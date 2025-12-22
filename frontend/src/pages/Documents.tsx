@@ -1,13 +1,8 @@
-import React from 'react';
 import { ArrowLeft, Image as ImageIcon, Search, Menu } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Documents() {
     const navigate = useNavigate();
-    const [files] = React.useState([
-        { name: 'roe_plu..._on.min', icon: 'pdf' },
-        { name: '063303...97.pdf', icon: 'pdf' }
-    ]);
     // Simplified for visual match
 
     return (

@@ -4,10 +4,9 @@ import { Link } from 'react-router-dom';
 
 interface Step3Props {
     loan: any;
-    commission: number;
 }
 
-export const Step3Success: React.FC<Step3Props> = ({ loan, commission }) => {
+export const Step3Success: React.FC<Step3Props> = ({ loan }) => {
     return (
         <div className="min-h-screen bg-white flex flex-col items-center pt-20 px-8">
             <div className="w-24 h-24 rounded-full border-4 border-green-500 flex items-center justify-center mb-6">

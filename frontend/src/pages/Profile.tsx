@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { MainLayout } from '../components/MainLayout';
 import { LogOut, Star, Mail, Phone, User as UserIcon } from 'lucide-react';

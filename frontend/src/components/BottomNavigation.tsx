@@ -1,4 +1,3 @@
-import React from 'react';
 import { Home, Search, Plus, FileText, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
