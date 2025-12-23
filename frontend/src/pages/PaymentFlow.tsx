@@ -39,12 +39,22 @@ export default function PaymentFlow() {
         try {
             console.log("Submitting payment for loan:", loan?.id, "with file:", file);
 
-            // Mock API call
-            setTimeout(() => {
-                setPaymentResult({ status: 'COMPLETED', reference: 'TXN-mock-123', amount: loan ? (parseFloat(loan.totalAmountDue) / parseFloat(loan.termMonths)).toFixed(2) : "0.00" });
-                nextStep(); // Go to step 3 (Confirm)
-            }, 1000);
+            // Upload proof logic (Mock URL for now as standard upload is complex to setup in 1 step without bucket)
+            // In a real scenario we'd upload 'file' to S3/Cloudinary first.
+            const proofUrl = "https://placeholder.com/payment-proof-mock.jpg";
+
+            const installment = loan ? (parseFloat(loan.totalAmountDue) / parseFloat(loan.termMonths)).toFixed(2) : "0.00";
+
+            await api.post(`/loans/${loan?.id || loanId}/pay`, {
+                amount: parseFloat(installment),
+                proofUrl: proofUrl
+            });
+
+            setPaymentResult({ status: 'COMPLETED', reference: 'PENDING-CONFIRMATION', amount: installment });
+            nextStep(); // Go to step 3 (Confirm)
+
         } catch (error) {
+            console.error(error);
             alert("Error al procesar el pago");
         }
     };

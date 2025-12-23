@@ -1,5 +1,5 @@
 import db from '../database';
-import { loans, loanOffers, users } from '../db/schema';
+import { loans, loanOffers, users, payments, documents } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -133,5 +133,34 @@ export class LoanService {
             .where(eq(loans.id, loanId))
             .returning();
         return updatedLoan;
+    }
+
+    async registerPayment(loanId: string, amount: number, proofUrl: string) {
+        // 1. Create Payment Record
+        const [payment] = await db.insert(payments).values({
+            loanId,
+            amountPaid: amount.toFixed(2),
+            paymentMethod: 'BANK_TRANSFER', // Default for now as per user flow
+            status: 'PENDING',
+            transactionReference: 'PROOF_UPLOADED' // Marker
+        }).returning();
+
+        // 2. Store Document (Proof)
+        if (proofUrl) {
+            await db.insert(documents).values({
+                loanId,
+                documentType: 'BANK_STATEMENT', // Using best fit enum
+                fileUrl: proofUrl,
+                // userId: we could fetch it from loan but optional here
+            });
+        }
+
+        // 3. Update Loan Status? 
+        // Not yet, wait for confirmation. 
+        // But we might want to flag it? 
+        // Schema doesn't have "AWAITING_PAYMENT_CONFIRMATION" for loan. 
+        // We rely on the payment status 'PENDING' to show it in UI.
+
+        return payment;
     }
 }

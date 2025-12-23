@@ -126,3 +126,35 @@ export const rejectLoan = async (req: Request, res: Response) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+export const registerPayment = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { amount, proofUrl } = req.body;
+
+        const payment = await loanService.registerPayment(id, amount, proofUrl);
+
+        // Notify Lender
+        // Need to fetch lender ID to target notification?
+        // Or just emit to everyone? NO.
+        // Let's fetch the loan to get the lenderId
+        const loan = await loanService.getLoanById(id);
+
+        if (loan && loan.lenderId) { // Check if lender exists (should exist for active loan)
+            // Use db directly or service to get lender details?
+            // "getIO().to(socketId)..." but we don't have socketId map easily available unless we implemented room logic.
+            // But we can emit 'payment_received' with lenderId in payload, and frontend filters.
+
+            getIO().emit('payment_received', {
+                targetUserId: loan.lenderId, // Frontend must filter by this
+                loanId: id,
+                amount: amount,
+                message: `Se ha registrado un pago de S/. ${amount} para el préstamo #${id.slice(0, 6)}`
+            });
+        }
+
+        res.json(payment);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};

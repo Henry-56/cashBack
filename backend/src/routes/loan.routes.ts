@@ -11,6 +11,7 @@ router.post('/', loanController.createLoan);
 router.post('/:id/fund', loanController.fundLoan);
 router.post('/:id/confirm', loanController.confirmLoan); // NEW
 router.post('/:id/reject', loanController.rejectLoan);   // NEW
+router.post('/:id/pay', loanController.registerPayment); // NEW
 router.get('/', loanController.getMyLoans); // /api/loans?userId=...
 router.get('/:id', loanController.getLoanById);
 
