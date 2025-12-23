@@ -75,6 +75,7 @@ export class LoanService {
             status: loans.status,
             createdAt: loans.createdAt,
             userId: loans.userId,
+            lenderId: loans.lenderId,
             borrowerName: users.fullName
         })
             .from(loans)
