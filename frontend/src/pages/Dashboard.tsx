@@ -6,6 +6,7 @@ import { Settings, Bell, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../api/client';
 import { toast } from 'react-hot-toast';
+import logo from '../assets/logo.png';
 
 interface Loan {
     id: string;
@@ -187,9 +188,7 @@ export default function Dashboard() {
             <div className="bg-[var(--primary)] pt-8 pb-6 px-6 rounded-b-[2rem] shadow-lg">
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center space-x-2">
-                        <div className="text-[var(--accent)] font-bold text-xl tracking-tight leading-none border-2 border-[var(--accent)] p-1 rounded">
-                            CA$H<br />BACK
-                        </div>
+                        <img src={logo} alt="CashBack Logo" className="h-12 w-auto" />
                     </div>
                     <div className="flex space-x-4 text-white/80">
                         <Settings size={20} />
