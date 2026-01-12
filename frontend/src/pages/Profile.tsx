@@ -55,7 +55,7 @@ export default function Profile() {
                             </div>
                             <div>
                                 <p className="text-xs text-gray-400">Teléfono</p>
-                                <p className="font-medium text-gray-800">+51 987 654 321</p>
+                                <p className="font-medium text-gray-800">{user.phone || 'No registrado'}</p>
                             </div>
                         </div>
                     </div>

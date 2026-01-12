@@ -6,6 +6,7 @@ interface User {
     email: string;
     fullName: string;
     rating: string;
+    phone?: string | null;
 }
 
 interface AuthContextType {

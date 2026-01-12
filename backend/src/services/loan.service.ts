@@ -61,9 +61,22 @@ export class LoanService {
     }
 
     async getPendingLoans() {
-        // Fetch all pending loans for the marketplace
-        // In a real app, we might join with Users to get the requester name
-        return await db.select().from(loans).where(eq(loans.status, 'PENDING'));
+        return await db.select({
+            id: loans.id,
+            amountRequested: loans.amountRequested,
+            totalAmountDue: loans.totalAmountDue,
+            termMonths: loans.termMonths,
+            status: loans.status,
+            createdAt: loans.createdAt,
+            userId: loans.userId,
+            user: {
+                fullName: users.fullName,
+                rating: users.rating,
+            }
+        })
+            .from(loans)
+            .leftJoin(users, eq(loans.userId, users.id))
+            .where(eq(loans.status, 'PENDING'));
     }
 
     async getLoanById(id: string) {
