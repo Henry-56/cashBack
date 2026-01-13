@@ -10,7 +10,8 @@ app.use(cors({
     origin: [
         "http://localhost:5173",
         "https://cashback-kappa.vercel.app",
-        "https://cashback-phjt.onrender.com"
+        "https://cashback-phjt.onrender.com",
+        "https://app.emony.info"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] // include common methods
