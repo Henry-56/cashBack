@@ -12,6 +12,10 @@ interface Loan {
     description?: string;
     createdAt: string;
     userId: string;
+    user: {
+        fullName: string;
+        rating: string;
+    }
 }
 
 export default function LoanMarket() {
@@ -99,6 +103,15 @@ export default function LoanMarket() {
                                     <div>
                                         <h4 className="text-[var(--primary)] font-bold text-3xl">S/.{loan.amountRequested}</h4>
                                         <p className="text-xs text-gray-400 mt-1">Solicitado el {new Date(loan.createdAt).toLocaleDateString()}</p>
+
+                                        <div className="mt-2">
+                                            <p className="font-bold text-sm text-[var(--primary)]">{loan.user?.fullName || 'Usuario'}</p>
+                                            <div className="flex text-yellow-400 text-xs">
+                                                {'★'.repeat(Math.round(Number(loan.user?.rating || 0)))}
+                                                <span className="text-gray-300">{'★'.repeat(5 - Math.round(Number(loan.user?.rating || 0)))}</span>
+                                                <span className="ml-1 text-gray-400">({loan.user?.rating})</span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded font-bold">
                                         {loan.termMonths} Semanas

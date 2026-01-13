@@ -1,6 +1,6 @@
 import db from '../database';
 import { loans, loanOffers, users, payments, documents } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
 const loanRequestSchema = z.object({
@@ -76,7 +76,8 @@ export class LoanService {
         })
             .from(loans)
             .leftJoin(users, eq(loans.userId, users.id))
-            .where(eq(loans.status, 'PENDING'));
+            .where(eq(loans.status, 'PENDING'))
+            .orderBy(desc(loans.createdAt));
     }
 
     async getLoanById(id: string) {
