@@ -57,9 +57,12 @@ export const getMyLoans = async (req: Request, res: Response) => {
 
 export const getMarketplaceLoans = async (req: Request, res: Response) => {
     try {
+        console.log("Fetching marketplace loans...");
         const loans = await loanService.getPendingLoans();
+        console.log(`Found ${loans.length} loans`);
         res.json(loans);
     } catch (error: any) {
+        console.error("Error fetching marketplace loans:", error);
         res.status(500).json({ error: error.message });
     }
 };

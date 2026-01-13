@@ -123,8 +123,9 @@ export default function Dashboard() {
                 }
 
                 if (marketLoansRes.data) {
-                    // Filter out my own loans
-                    setMarketLoans(marketLoansRes.data.filter((l: any) => l.userId !== user.id));
+                    // Filter out my own loans - TEMP DISABLED to debug
+                    // setMarketLoans(marketLoansRes.data.filter((l: any) => l.userId !== user.id));
+                    setMarketLoans(marketLoansRes.data);
                 }
             }).catch(err => console.error(err))
                 .finally(() => setLoading(false));
