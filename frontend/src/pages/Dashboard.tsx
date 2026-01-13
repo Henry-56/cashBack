@@ -247,8 +247,9 @@ export default function Dashboard() {
                                         <h4 className="text-[var(--primary)] font-bold text-2xl">S/.{loan.amountRequested}</h4>
                                         <p className="text-sm font-bold text-gray-700">{loan.user?.fullName || 'Usuario'}</p>
                                         <div className="flex items-center text-yellow-500 text-xs">
-                                            {'★'.repeat(Math.round(Number(loan.user?.rating || 5)))}
-                                            <span className="ml-1 text-gray-400">({loan.user?.rating || '5.0'})</span>
+                                            {'★'.repeat(Math.round(Number(loan.user?.rating || 0)))}
+                                            <span className="text-gray-300">{'★'.repeat(5 - Math.round(Number(loan.user?.rating || 0)))}</span>
+                                            <span className="ml-1 text-gray-400">({loan.user?.rating || '0.0'})</span>
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1 font-medium">Plazo: {loan.termMonths} semanas</p>
                                     </div>
