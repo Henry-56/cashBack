@@ -23,12 +23,12 @@ interface Loan {
 
 // Loan Offer Card Component
 const LoanOfferCard = ({ amount }: { amount: string }) => (
-    <div className="bg-white rounded-xl min-w-[180px] shadow-sm flex justify-between items-stretch border border-gray-100 overflow-hidden">
-        <div className="p-3 py-7 flex items-center">
-            <h3 className="text-[var(--primary)] font-bold text-xl">S/.{amount}</h3>
+    <div className="bg-white rounded-2xl min-w-[200px] shadow-sm flex justify-between items-stretch border border-gray-100 overflow-hidden">
+        <div className="p-6 flex items-center">
+            <h3 className="text-[var(--primary)] font-bold text-2xl">S/.{amount}</h3>
         </div>
-        <div className="bg-[#7EBEBF] w-10 flex items-center justify-center">
-            <span className="transform -rotate-90 text-[var(--primary)] text-[10px] font-bold tracking-widest uppercase whitespace-nowrap">Enviar</span>
+        <div className="bg-[#7EBEBF] w-12 h-20 rounded-lg flex items-center justify-center mr-2 my-auto">
+            <span className="transform -rotate-90 text-[var(--primary)] text-xs font-bold tracking-widest uppercase whitespace-nowrap">Enviar</span>
         </div>
     </div>
 );
@@ -216,7 +216,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <div className="p-6 space-y-8">
+            <div className="p-6 space-y-4">
                 {/* Solicitar Préstamo Section */}
                 <section>
                     <h3 className="font-bold text-[var(--primary)] mb-4">Solicitar préstamo</h3>
