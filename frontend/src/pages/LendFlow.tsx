@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/MainLayout';
-import { ChevronLeft, UploadCloud, CheckCircle, Clock } from 'lucide-react';
+import { ChevronLeft, UploadCloud, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import Tesseract from 'tesseract.js';
 
 export default function LendFlow() {
     const { id } = useParams();
@@ -16,16 +17,74 @@ export default function LendFlow() {
     const [preview, setPreview] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    // OCR Validation State
+    const [isValidating, setIsValidating] = useState(false);
+    const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+    const [validationMessage, setValidationMessage] = useState('');
+
     useEffect(() => {
         // Fetch loan details
         api.get(`/loans/${id}`).then(res => setLoan(res.data)).catch(err => console.error(err));
     }, [id]);
+
+    const validateImage = async (fileToValidate: File) => {
+        setIsValidating(true);
+        setValidationStatus('idle');
+        setValidationMessage('Analizando comprobante con IA...');
+
+        try {
+            const result = await Tesseract.recognize(
+                fileToValidate,
+                'eng+spa',
+                { logger: m => console.log(m) }
+            );
+
+            const text = result.data.text.toLowerCase();
+            console.log("Extracted text:", text);
+
+            // PRIMARY keywords - must find at least one of these (app/bank names)
+            const primaryKeywords = ['yape', 'plin', 'bcp', 'bbva', 'interbank', 'scotiabank'];
+
+            // SECONDARY keywords - transaction indicators
+            const transactionKeywords = ['pagaste', 'enviaste', 'recibiste', 'transferencia', 'operación', 'operacion', 'soles', 's/.'];
+
+            const foundPrimary = primaryKeywords.filter(keyword => text.includes(keyword));
+            const foundTransaction = transactionKeywords.filter(keyword => text.includes(keyword));
+
+            console.log("Found primary:", foundPrimary);
+            console.log("Found transaction:", foundTransaction);
+
+            // Must have at least 1 primary keyword AND at least 1 transaction keyword
+            if (foundPrimary.length > 0 && foundTransaction.length > 0) {
+                setValidationStatus('valid');
+                setValidationMessage(`¡Comprobante válido! Se detectó: ${foundPrimary[0]} + ${foundTransaction[0]}`);
+                toast.success("Comprobante validado correctamente");
+            } else if (foundPrimary.length > 0) {
+                setValidationStatus('invalid');
+                setValidationMessage('Se detectó la app pero no el comprobante de pago. Sube una captura del pago enviado.');
+                toast.error("Sube la captura del pago, no solo la app");
+            } else {
+                setValidationStatus('invalid');
+                setValidationMessage('No se detectó un comprobante de Yape o Plin válido. Por favor sube una captura de pantalla del pago realizado.');
+                toast.error("No parece ser un comprobante válido");
+            }
+
+        } catch (error) {
+            console.error("OCR Error:", error);
+            setValidationStatus('invalid');
+            setValidationMessage('Error al analizar la imagen. Intenta de nuevo.');
+        } finally {
+            setIsValidating(false);
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const f = e.target.files[0];
             setFile(f);
             setPreview(URL.createObjectURL(f));
+            // Trigger OCR validation
+            validateImage(f);
         }
     };
 
@@ -120,13 +179,30 @@ export default function LendFlow() {
                             <p className="text-xs text-gray-400 mt-2 flex items-center">
                                 <Clock size={12} className="mr-1" /> Tu información será verificada y protegida.
                             </p>
+
+                            {/* Validation Status Indicator */}
+                            {preview && (
+                                <div className={`mt-3 p-3 rounded-lg flex items-start space-x-2 text-sm transition-all
+                                    ${isValidating ? 'bg-blue-50 text-blue-700' : ''}
+                                    ${validationStatus === 'valid' ? 'bg-green-50 text-green-700' : ''}
+                                    ${validationStatus === 'invalid' ? 'bg-red-50 text-red-700' : ''}
+                                `}>
+                                    {isValidating && <Loader2 className="animate-spin shrink-0" size={18} />}
+                                    {validationStatus === 'valid' && <CheckCircle className="shrink-0" size={18} />}
+                                    {validationStatus === 'invalid' && <AlertCircle className="shrink-0" size={18} />}
+                                    <span className="font-medium">{validationMessage}</span>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="w-full h-64 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors relative overflow-hidden"
-                            onClick={() => document.getElementById('file-upload')?.click()}>
+                        <div className={`w-full h-64 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center bg-gray-50 cursor-pointer transition-colors relative overflow-hidden
+                            ${validationStatus === 'valid' ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:bg-gray-100'}
+                            ${validationStatus === 'invalid' ? 'border-red-300 bg-red-50' : ''}
+                        `}
+                            onClick={() => !isValidating && document.getElementById('file-upload')?.click()}>
 
                             {preview ? (
-                                <img src={preview} alt="Comprobante" className="w-full h-full object-cover" />
+                                <img src={preview} alt="Comprobante" className={`w-full h-full object-cover transition-opacity ${isValidating ? 'opacity-50' : 'opacity-100'}`} />
                             ) : (
                                 <>
                                     <UploadCloud size={48} className="text-gray-300 mb-2" />
@@ -140,6 +216,7 @@ export default function LendFlow() {
                                 className="hidden"
                                 accept="image/*"
                                 onChange={handleFileChange}
+                                disabled={isValidating}
                             />
                         </div>
 
@@ -150,11 +227,11 @@ export default function LendFlow() {
 
                         <button
                             onClick={handleFund}
-                            disabled={isLoading || !file}
+                            disabled={isLoading || isValidating || !file || validationStatus !== 'valid'}
                             className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg text-white transition-colors mt-auto
-                                ${isLoading || !file ? 'bg-gray-400 cursor-not-allowed' : 'bg-[var(--primary)] hover:bg-[var(--primary-dark)]'}`}
+                                ${isLoading || isValidating || !file || validationStatus !== 'valid' ? 'bg-gray-400 cursor-not-allowed' : 'bg-[var(--primary)] hover:bg-[var(--primary-dark)]'}`}
                         >
-                            {isLoading ? 'Enviando...' : 'Confirmar Envío'}
+                            {isLoading ? 'Enviando...' : isValidating ? 'Analizando...' : 'Confirmar Envío'}
                         </button>
                     </div>
                 )}

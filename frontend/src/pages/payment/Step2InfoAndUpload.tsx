@@ -37,17 +37,31 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
             const text = result.data.text.toLowerCase();
             console.log("Extracted text:", text);
 
-            // Keywords to look for
-            const validKeywords = ['yape', 'plin', 'pagaste', 'exitoso', 'destino', 'importe', 'bcp', 'bbva', 'interbank', 'scotiabank'];
-            const foundKeywords = validKeywords.filter(keyword => text.includes(keyword));
+            // PRIMARY keywords - must find at least one of these (app/bank names)
+            const primaryKeywords = ['yape', 'plin', 'bcp', 'bbva', 'interbank', 'scotiabank'];
 
-            if (foundKeywords.length > 0) {
+            // SECONDARY keywords - transaction indicators
+            const transactionKeywords = ['pagaste', 'enviaste', 'recibiste', 'transferencia', 'operación', 'operacion', 'soles', 's/.'];
+
+            const foundPrimary = primaryKeywords.filter(keyword => text.includes(keyword));
+            const foundTransaction = transactionKeywords.filter(keyword => text.includes(keyword));
+
+            console.log("Found primary:", foundPrimary);
+            console.log("Found transaction:", foundTransaction);
+
+            // Must have at least 1 primary keyword AND at least 1 transaction keyword
+            if (foundPrimary.length > 0 && foundTransaction.length > 0) {
                 setValidationStatus('valid');
-                setValidationMessage(`¡Comprobante válido! Se detectó: ${foundKeywords.slice(0, 2).join(', ')}...`);
+                setValidationMessage(`¡Comprobante válido! Se detectó: ${foundPrimary[0]} + ${foundTransaction[0]}`);
                 toast.success("Comprobante validado correctamente");
+            } else if (foundPrimary.length > 0) {
+                // Found app name but no transaction
+                setValidationStatus('invalid');
+                setValidationMessage('Se detectó la app pero no el comprobante de pago. Sube una captura del pago enviado.');
+                toast.error("Sube la captura del pago, no solo la app");
             } else {
                 setValidationStatus('invalid');
-                setValidationMessage('No se detectó un comprobante de Yape o Plin válido. Por favor intenta con una imagen más clara.');
+                setValidationMessage('No se detectó un comprobante de Yape o Plin válido. Por favor sube una captura de pantalla del pago realizado.');
                 toast.error("No parece ser un comprobante válido");
             }
 
