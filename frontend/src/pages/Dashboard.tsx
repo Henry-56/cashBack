@@ -23,12 +23,12 @@ interface Loan {
 
 // Loan Offer Card Component
 const LoanOfferCard = ({ amount }: { amount: string }) => (
-    <div className="bg-white rounded-2xl min-w-[280px] shadow-sm flex justify-between items-stretch border border-gray-100 overflow-hidden">
-        <div className="p-4 flex items-center">
-            <h3 className="text-[var(--primary)] font-bold text-2xl">S/.{amount}</h3>
+    <div className="bg-white rounded-xl min-w-[180px] shadow-sm flex justify-between items-stretch border border-gray-100 overflow-hidden">
+        <div className="p-3 flex items-center">
+            <h3 className="text-[var(--primary)] font-bold text-xl">S/.{amount}</h3>
         </div>
-        <div className="bg-[var(--accent)] w-12 flex items-center justify-center">
-            <span className="transform -rotate-90 text-[var(--primary)] text-xs font-bold tracking-widest uppercase whitespace-nowrap">Enviar</span>
+        <div className="bg-[#7EBEBF] w-10 flex items-center justify-center">
+            <span className="transform -rotate-90 text-[var(--primary)] text-[10px] font-bold tracking-widest uppercase whitespace-nowrap">Enviar</span>
         </div>
     </div>
 );
