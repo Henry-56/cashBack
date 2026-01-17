@@ -1,6 +1,6 @@
 import db from '../database';
 import { loans, loanOffers, users, payments, documents } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, ne, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 const loanRequestSchema = z.object({
@@ -60,7 +60,7 @@ export class LoanService {
         return await db.select().from(loans).where(eq(loans.lenderId, lenderId));
     }
 
-    async getPendingLoans() {
+    async getPendingLoans(currentUserId?: string) {
         return await db.select({
             id: loans.id,
             amountRequested: loans.amountRequested,
@@ -76,7 +76,12 @@ export class LoanService {
         })
             .from(loans)
             .leftJoin(users, eq(loans.userId, users.id))
-            .where(eq(loans.status, 'PENDING'))
+            .where(
+                and(
+                    eq(loans.status, 'PENDING'),
+                    currentUserId ? ne(loans.userId, currentUserId) : undefined
+                )
+            )
             .orderBy(desc(loans.createdAt));
     }
 

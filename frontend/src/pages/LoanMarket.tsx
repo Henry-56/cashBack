@@ -27,12 +27,11 @@ export default function LoanMarket() {
     const [filterType, setFilterType] = useState<'recent' | 'amount_desc' | 'amount_asc'>('recent');
 
     useEffect(() => {
-        api.get('/loans/market')
+        const endpoint = user ? `/loans/market?userId=${user.id}` : '/loans/market';
+        api.get(endpoint)
             .then(res => {
-                // Filter out own loans if any
-                const othersLoans = res.data.filter((l: Loan) => l.userId !== user?.id);
-                setLoans(othersLoans);
-                setFilteredLoans(othersLoans);
+                setLoans(res.data);
+                setFilteredLoans(res.data);
             })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));

@@ -111,7 +111,7 @@ export default function Dashboard() {
             setLoading(true);
             Promise.all([
                 api.get(`/loans?userId=${user.id}`), // Returns { borrowed: [], lent: [] }
-                api.get('/loans/market')
+                api.get(`/loans/market?userId=${user.id}`)
             ]).then(([userLoansRes, marketLoansRes]) => {
                 // Handle new structure
                 if (userLoansRes.data.borrowed) {
