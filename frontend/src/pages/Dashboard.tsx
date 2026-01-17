@@ -21,6 +21,7 @@ interface Loan {
     };
 }
 
+// Loan Offer Card Component
 const LoanOfferCard = ({ amount }: { amount: string }) => (
     <div className="bg-white rounded-2xl p-4 min-w-[280px] shadow-sm flex justify-between items-center border border-gray-100">
         <div>
