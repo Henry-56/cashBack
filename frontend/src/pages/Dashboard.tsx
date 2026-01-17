@@ -26,8 +26,8 @@ const LoanOfferCard = ({ amount }: { amount: string }) => (
         <div>
             <h3 className="text-[var(--primary)] font-bold text-2xl">S/.{amount}</h3>
         </div>
-        <div className="bg-[var(--accent)] h-12 w-10 rounded-l-lg flex items-center justify-center -mr-4">
-            <span className="transform -rotate-90 text-[var(--primary)] text-xs font-bold tracking-widest uppercase">Enviar</span>
+        <div className="bg-[var(--accent)] h-24 w-10 rounded-l-lg flex items-center justify-center -mr-4">
+            <span className="transform -rotate-90 text-[var(--primary)] text-xs font-bold tracking-widest uppercase whitespace-nowrap">Enviar</span>
         </div>
     </div>
 );

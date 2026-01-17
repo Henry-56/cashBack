@@ -13,7 +13,12 @@ interface Step1Props {
 
 const OFFERS = [100, 250, 500];
 
+const RATES: Record<number, number> = { 1: 8, 2: 12, 3: 16, 4: 20 };
+
 export const Step1Amount: React.FC<Step1Props> = ({ data, onUpdate, onNext }) => {
+    const ratePercent = RATES[data.termMonths] || 20;
+    const interestAmount = data.amount * (ratePercent / 100);
+    const totalAmount = data.amount + interestAmount;
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden relative">
@@ -73,12 +78,12 @@ export const Step1Amount: React.FC<Step1Props> = ({ data, onUpdate, onNext }) =>
                                 <span className="font-bold text-[var(--primary)]">S/. {data.amount.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-gray-500">
-                                <span>Interés ({data.termMonths + 1}%):</span>
-                                <span className="font-bold text-green-600">S/. {(data.amount * ((data.termMonths + 1) / 100)).toFixed(2)}</span>
+                                <span>Interés ({ratePercent}%):</span>
+                                <span className="font-bold text-green-600">S/. {interestAmount.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between border-t border-gray-200 pt-1 mt-1">
                                 <span className="font-bold text-[var(--primary)]">A devolver:</span>
-                                <span className="font-bold text-[var(--primary)]">S/. {(data.amount * (1 + (data.termMonths + 1) / 100)).toFixed(2)}</span>
+                                <span className="font-bold text-[var(--primary)]">S/. {totalAmount.toFixed(2)}</span>
                             </div>
                         </div>
 

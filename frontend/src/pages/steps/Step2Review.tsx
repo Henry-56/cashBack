@@ -14,6 +14,11 @@ interface Step2Props {
 export const Step2Review: React.FC<Step2Props> = ({ data, onSubmit }) => {
     const navigate = useNavigate();
 
+    const RATES: Record<number, number> = { 1: 8, 2: 12, 3: 16, 4: 20 };
+    const ratePercent = RATES[data.termMonths] || 20;
+    const interestAmount = data.amount * (ratePercent / 100);
+    const totalAmount = data.amount + interestAmount;
+
     return (
         <div className="min-h-screen bg-[var(--bg-light)]">
             {/* Header */}
@@ -43,16 +48,16 @@ export const Step2Review: React.FC<Step2Props> = ({ data, onSubmit }) => {
 
                     <div className="bg-green-50 p-4 rounded-xl mt-4">
                         <div className="flex justify-between items-center text-sm mb-1">
-                            <span className="text-green-700">Interés por {data.termMonths} semana(s) ({data.termMonths + 1}%):</span>
-                            <span className="font-bold text-green-700">+ S/. {(data.amount * ((data.termMonths + 1) / 100)).toFixed(2)}</span>
+                            <span className="text-green-700">Interés por {data.termMonths} semana(s) ({ratePercent}%):</span>
+                            <span className="font-bold text-green-700">+ S/. {interestAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between items-center text-xl font-bold mt-2 pt-2 border-t border-green-200">
                             <span className="text-[var(--primary)]">Total a Pagar:</span>
-                            <span className="text-[var(--primary)]">S/. {(data.amount * (1 + (data.termMonths + 1) / 100)).toFixed(2)}</span>
+                            <span className="text-[var(--primary)]">S/. {totalAmount.toFixed(2)}</span>
                         </div>
                     </div>
 
-                    <p className="text-[10px] text-gray-400 text-center mt-2">* El interés varía según el plazo (2% - 5%).</p>
+                    <p className="text-[10px] text-gray-400 text-center mt-2">* El interés varía según el plazo (8% - 20%).</p>
 
                     <div className="bg-gray-50 rounded-xl p-4 mt-4 space-y-2">
                         <div className="flex justify-between text-sm">
@@ -66,7 +71,7 @@ export const Step2Review: React.FC<Step2Props> = ({ data, onSubmit }) => {
                         <div className="flex justify-between text-sm border-t border-gray-200 pt-2 mt-2">
                             <span className="text-gray-500">Monto por cuota:</span>
                             <span className="font-bold text-[var(--primary)]">
-                                S/. {((data.amount * (1 + (data.termMonths + 1) / 100)) / data.termMonths).toFixed(2)}
+                                S/. {(totalAmount / data.termMonths).toFixed(2)}
                             </span>
                         </div>
                         <div className="flex justify-between text-[10px] text-gray-400 mt-1">

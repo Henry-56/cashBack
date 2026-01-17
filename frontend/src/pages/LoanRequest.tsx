@@ -28,8 +28,9 @@ export default function LoanRequest() {
         try {
             if (!user) return;
 
-            // Calculate dynamic interest rate: 1wk=2%, 2wk=3%, 3wk=4%, 4wk=5%
-            const calculatedRate = formData.termMonths + 1;
+            // Calculate dynamic interest rate: 1wk=8%, 2wk=12%, 3wk=16%, 4wk=20%
+            const rates: Record<number, number> = { 1: 8, 2: 12, 3: 16, 4: 20 };
+            const calculatedRate = rates[formData.termMonths] || 20;
 
             const payload = {
                 userId: user.id,

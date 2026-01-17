@@ -21,8 +21,11 @@ export class LoanService {
         const amountRequested = validated.amountRequested;
         const netAmount = amountRequested; // No commission deducted from received amount
 
-        // Calculate total due based on the provided interest rate (flat rate for the period)
-        const interestRateDecimal = validated.interestRate / 100;
+        // Calculate total due based on fixed rates per term (weeks)
+        const rates: Record<number, number> = { 1: 8, 2: 12, 3: 16, 4: 20 };
+        const applicableRate = rates[validated.termMonths] || 20; // Default to 20% if unknown term
+
+        const interestRateDecimal = applicableRate / 100;
         const totalInterest = amountRequested * interestRateDecimal;
         const totalAmountDue = amountRequested + totalInterest;
 
@@ -34,7 +37,7 @@ export class LoanService {
             amountRequested: amountRequested.toFixed(2),
             netAmount: netAmount.toFixed(2),
             platformCommission: platformCommission.toFixed(2),
-            interestRate: validated.interestRate.toFixed(2),
+            interestRate: applicableRate.toFixed(2),
             termMonths: validated.termMonths, // Storing weeks in this column for now
             totalAmountDue: totalAmountDue.toFixed(2),
             status: 'PENDING',
