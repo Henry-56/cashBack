@@ -1,7 +1,8 @@
 /**
- * Masks a user name for privacy, showing only first and last initials.
- * Example: "ANDERSHON SAUL RUIZ LANDEO" -> "A**** R****"
- * Example: "Henry Chavez" -> "H**** C****"
+ * Masks a user name for privacy, showing full first name and initials of last names.
+ * Example: "ANDERSHON SAUL RUIZ LANDEO" -> "ANDERSHON R. L."
+ * Example: "Henry Chavez" -> "Henry C."
+ * Example: "Maria Garcia Lopez" -> "Maria G. L."
  */
 export function maskName(name: string): string {
     if (!name) return 'Usuario';
@@ -9,16 +10,22 @@ export function maskName(name: string): string {
     const parts = name.trim().split(/\s+/);
 
     if (parts.length === 1) {
-        // Single name: show first letter + asterisks
-        const first = parts[0];
-        return first.charAt(0).toUpperCase() + '****';
+        // Single name: show it fully
+        return parts[0];
     }
 
-    // Multiple names: show first letter of first and last name
-    const firstName = parts[0];
-    const lastName = parts[parts.length - 1];
+    if (parts.length === 2) {
+        // First name + one last name: show first name + initial
+        return `${parts[0]} ${parts[1].charAt(0).toUpperCase()}.`;
+    }
 
-    return `${firstName.charAt(0).toUpperCase()}**** ${lastName.charAt(0).toUpperCase()}****`;
+    // Multiple names: First name + initials of last two parts (assumed to be apellidos)
+    // "ANDERSHON SAUL RUIZ LANDEO" -> parts[0]=first, assume last 2 are apellidos
+    const firstName = parts[0];
+    const apellido1Initial = parts[parts.length - 2].charAt(0).toUpperCase();
+    const apellido2Initial = parts[parts.length - 1].charAt(0).toUpperCase();
+
+    return `${firstName} ${apellido1Initial}. ${apellido2Initial}.`;
 }
 
 /**
