@@ -65,7 +65,7 @@ export default function LendFlow() {
                 toast.error("Sube la captura del pago, no solo la app");
             } else {
                 setValidationStatus('invalid');
-                setValidationMessage('No se detectó un comprobante de Yape o Plin válido. Por favor sube una captura de pantalla del pago realizado.');
+                setValidationMessage('No se detectó un comprobante de billetera digital válido. Por favor sube una captura de pantalla del pago realizado.');
                 toast.error("No parece ser un comprobante válido");
             }
 
@@ -171,8 +171,7 @@ export default function LendFlow() {
                                         <p className="font-bold text-2xl text-gray-800">{loan.borrowerPhone}</p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">Yape</span>
-                                        <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">Plin</span>
+                                        <span className="bg-gradient-to-r from-purple-500 to-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">📱 Billetera Digital</span>
                                     </div>
                                 </div>
                             </div>
@@ -181,7 +180,7 @@ export default function LendFlow() {
                         {!loan.borrowerPhone && (
                             <div className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
                                 <p className="text-yellow-700 text-sm">
-                                    ⚠️ El solicitante no ha registrado su número de Yape/Plin.
+                                    ⚠️ El solicitante no ha registrado su número de billetera digital.
                                 </p>
                             </div>
                         )}
@@ -200,7 +199,7 @@ export default function LendFlow() {
                         <div className="text-left w-full">
                             <h3 className="font-bold text-[var(--primary)] text-xl mb-2">Sube tu comprobante de depósito</h3>
                             <p className="text-gray-500 text-sm">
-                                Para validar el envío del préstamo, por favor adjunta la imagen del comprobante de la transferencia (Yape, Plin) o captura de la billetera digital.
+                                Para validar el envío del préstamo, por favor adjunta la imagen del comprobante de la transferencia o captura de la billetera digital.
                             </p>
                             <p className="text-xs text-gray-400 mt-2 flex items-center">
                                 <Clock size={12} className="mr-1" /> Tu información será verificada y protegida.
