@@ -286,6 +286,16 @@ export class LoanService {
         return payment;
     }
 
+    async rejectPayment(paymentId: string) {
+        // Mark payment as FAILED - lender says they didn't receive the money
+        const [payment] = await db.update(payments)
+            .set({ status: 'FAILED' })
+            .where(eq(payments.id, paymentId))
+            .returning();
+
+        return payment;
+    }
+
     async getPendingPaymentsForLender(lenderId: string) {
         // Get all loans where this user is the lender
         const lenderLoans = await db.select({

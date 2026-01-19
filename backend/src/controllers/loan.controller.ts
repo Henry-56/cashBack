@@ -201,3 +201,29 @@ export const getPendingPaymentsForLender = async (req: Request, res: Response) =
         res.status(400).json({ error: error.message });
     }
 };
+
+export const rejectPayment = async (req: Request, res: Response) => {
+    try {
+        const { paymentId } = req.params;
+        const payment = await loanService.rejectPayment(paymentId);
+
+        if (!payment) {
+            return res.status(404).json({ error: "Payment not found" });
+        }
+
+        // Notify borrower that their payment was rejected
+        const loan = await loanService.getLoanById(payment.loanId);
+        if (loan) {
+            getIO().emit('payment_rejected', {
+                targetUserId: loan.userId,
+                loanId: payment.loanId,
+                amount: payment.amountPaid,
+                message: `Tu pago de S/. ${payment.amountPaid} fue rechazado. El prestamista indica que no recibió el dinero.`
+            });
+        }
+
+        res.json({ payment, message: 'Pago rechazado' });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};

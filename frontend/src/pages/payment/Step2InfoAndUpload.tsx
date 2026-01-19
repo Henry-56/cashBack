@@ -138,60 +138,79 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
                 </div>
             )}
 
-            <div className="text-left w-full mb-4">
-                <h3 className="font-bold text-[var(--primary)] mb-1">Comprobante de pago</h3>
-                <p className="text-gray-500 text-sm">
-                    Sube la captura de tu transferencia (Yape/Plin) por el monto indicado arriba.
-                </p>
+            {/* Block if pending confirmations */}
+            {loan.paymentProgress?.pendingConfirmations > 0 && (
+                <div className="w-full bg-orange-100 border-2 border-orange-400 rounded-xl p-6 mb-4 text-center">
+                    <div className="text-4xl mb-3">⏳</div>
+                    <h3 className="font-bold text-orange-700 text-lg mb-2">Pagos Pendientes de Confirmación</h3>
+                    <p className="text-orange-600 text-sm mb-4">
+                        Tienes <strong>{loan.paymentProgress.pendingConfirmations} pago(s)</strong> esperando confirmación del prestamista.
+                    </p>
+                    <p className="text-orange-500 text-xs">
+                        No puedes realizar más pagos hasta que se confirmen los anteriores.
+                    </p>
+                </div>
+            )}
 
-                {/* Validation Status Indicator */}
-                {preview && (
-                    <div className={`mt-3 p-3 rounded-lg flex items-start space-x-2 text-sm transition-all
+            {/* Show payment form only if no pending confirmations */}
+            {(!loan.paymentProgress || loan.paymentProgress.pendingConfirmations === 0) && (
+                <>
+                    <div className="text-left w-full mb-4">
+                        <h3 className="font-bold text-[var(--primary)] mb-1">Comprobante de pago</h3>
+                        <p className="text-gray-500 text-sm">
+                            Sube la captura de tu transferencia (Yape/Plin) por el monto indicado arriba.
+                        </p>
+
+                        {/* Validation Status Indicator */}
+                        {preview && (
+                            <div className={`mt-3 p-3 rounded-lg flex items-start space-x-2 text-sm transition-all
                         ${isValidating ? 'bg-blue-50 text-blue-700' : ''}
                         ${validationStatus === 'valid' ? 'bg-green-50 text-green-700' : ''}
                         ${validationStatus === 'invalid' ? 'bg-red-50 text-red-700' : ''}
                     `}>
-                        {isValidating && <Loader2 className="animate-spin shrink-0" size={18} />}
-                        {validationStatus === 'valid' && <CheckCircle className="shrink-0" size={18} />}
-                        {validationStatus === 'invalid' && <AlertCircle className="shrink-0" size={18} />}
-                        <span className="font-medium">{validationMessage}</span>
+                                {isValidating && <Loader2 className="animate-spin shrink-0" size={18} />}
+                                {validationStatus === 'valid' && <CheckCircle className="shrink-0" size={18} />}
+                                {validationStatus === 'invalid' && <AlertCircle className="shrink-0" size={18} />}
+                                <span className="font-medium">{validationMessage}</span>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
 
-            <div className={`w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center bg-gray-50 cursor-pointer transition-colors relative overflow-hidden
+                    <div className={`w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center bg-gray-50 cursor-pointer transition-colors relative overflow-hidden
                 ${validationStatus === 'valid' ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:bg-gray-100'}
                 ${validationStatus === 'invalid' ? 'border-red-300 bg-red-50' : ''}
             `}
-                onClick={() => !isValidating && document.getElementById('payment-proof-upload')?.click()}>
+                        onClick={() => !isValidating && document.getElementById('payment-proof-upload')?.click()}>
 
-                {preview ? (
-                    <img src={preview} alt="Comprobante" className={`w-full h-full object-cover transition-opacity ${isValidating ? 'opacity-50' : 'opacity-100'}`} />
-                ) : (
-                    <>
-                        <UploadCloud size={40} className="text-gray-300 mb-2" />
-                        <span className="text-[var(--primary)] font-bold text-sm">Toca para subir imagen</span>
-                    </>
-                )}
+                        {preview ? (
+                            <img src={preview} alt="Comprobante" className={`w-full h-full object-cover transition-opacity ${isValidating ? 'opacity-50' : 'opacity-100'}`} />
+                        ) : (
+                            <>
+                                <UploadCloud size={40} className="text-gray-300 mb-2" />
+                                <span className="text-[var(--primary)] font-bold text-sm">Toca para subir imagen</span>
+                            </>
+                        )}
 
-                <input
-                    id="payment-proof-upload"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    disabled={isValidating}
-                />
-            </div>
+                        <input
+                            id="payment-proof-upload"
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            disabled={isValidating}
+                        />
+                    </div>
 
-            <button
-                onClick={onNext}
-                disabled={!preview || isValidating || validationStatus !== 'valid'}
-                className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg text-white transition-colors mt-auto
+                    <button
+                        onClick={onNext}
+                        disabled={!preview || isValidating || validationStatus !== 'valid'}
+                        className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg text-white transition-colors mt-auto
                     ${!preview || isValidating || validationStatus !== 'valid' ? 'bg-gray-400 cursor-not-allowed' : 'bg-[var(--primary)] hover:bg-[var(--primary-dark)]'}`}
-            >
-                {isValidating ? 'Analizando...' : 'Confirmar Envío'}
-            </button>
+                    >
+                        {isValidating ? 'Analizando...' : 'Confirmar Envío'}
+                    </button>
+                </>
+            )}
         </div>
     );
 };

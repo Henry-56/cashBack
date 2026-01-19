@@ -52,19 +52,21 @@ const ActiveLoanCard = ({ loan, onConfirm, onReject }: { loan: Loan, onConfirm?:
     const progressPercent = progress ? (progress.paidInstallments / progress.totalInstallments) * 100 : 0;
 
     return (
-        <div className={`rounded-2xl p-5 shadow-lg relative overflow-hidden mb-4 ${isAwaiting ? 'bg-orange-500' : 'bg-[var(--primary)]'} text-white`}>
+        <div className={`rounded-2xl p-5 shadow-lg relative overflow-hidden mb-4 ${isAwaiting ? 'bg-gradient-to-r from-purple-50 to-green-50 border border-purple-200' : 'bg-[var(--primary)]'} ${isAwaiting ? 'text-gray-800' : 'text-white'}`}>
             {isAwaiting && (
-                <div className="absolute top-0 left-0 right-0 bg-white/20 p-1 text-center text-xs font-bold animate-pulse">
-                    Acción Requerida
-                </div>
+                <p className="text-xs text-purple-600 font-bold mb-2 animate-pulse">
+                    💰 PAGO RECIBIDO - CONFIRMAR
+                </p>
             )}
-            <div className="flex justify-between items-start z-10 relative mt-2">
+            <div className="flex justify-between items-start z-10 relative">
                 <div>
-                    <span className="bg-white/20 text-xs px-2 py-1 rounded">
-                        {isAwaiting ? '¿LLEGÓ EL DINERO?' : 'Préstamo Activo'}
-                    </span>
-                    <h3 className="text-2xl font-bold mt-1">S/. {progress?.remaining || loan.totalAmountDue}</h3>
-                    <p className="text-xs opacity-80">de S/. {loan.totalAmountDue}</p>
+                    {!isAwaiting && (
+                        <span className="bg-white/20 text-xs px-2 py-1 rounded text-white">
+                            Préstamo Activo
+                        </span>
+                    )}
+                    <h3 className={`text-2xl font-bold mt-1 ${isAwaiting ? 'text-[var(--primary)]' : 'text-white'}`}>S/. {progress?.remaining || loan.totalAmountDue}</h3>
+                    <p className={`text-xs ${isAwaiting ? 'text-gray-500' : 'opacity-80'}`}>de S/. {loan.totalAmountDue}</p>
 
                     {/* Payment Progress */}
                     {progress && !isAwaiting && (
@@ -94,21 +96,29 @@ const ActiveLoanCard = ({ loan, onConfirm, onReject }: { loan: Loan, onConfirm?:
                     <div className="flex flex-col space-y-2">
                         <button
                             onClick={() => onConfirm && onConfirm(loan.id)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-full font-bold text-xs shadow-md transition-all transform hover:scale-105"
+                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
                         >
-                            SÍ - CONFIRMAR
+                            ✓ Confirmar
                         </button>
                         <button
                             onClick={() => onReject && onReject(loan.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-full font-bold text-xs shadow-md transition-all transform hover:scale-105"
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
                         >
-                            NO - RECHAZAR
+                            ✗ No Verificar
                         </button>
                     </div>
                 ) : (
-                    <Link to={`/pay/${loan.id}`} className="bg-[var(--accent)] text-[var(--primary)] px-3 py-1 rounded font-bold text-sm">
-                        Pagar
-                    </Link>
+                    // Only show Pay button if there are still installments to pay
+                    // (completedPayments + pendingConfirmations) < totalInstallments
+                    (!progress || (progress.completedPayments + progress.pendingConfirmations) < progress.totalInstallments) ? (
+                        <Link to={`/pay/${loan.id}`} className="bg-[var(--accent)] text-[var(--primary)] px-3 py-1 rounded font-bold text-sm">
+                            Pagar
+                        </Link>
+                    ) : (
+                        <span className="bg-yellow-500/80 text-white px-3 py-1 rounded font-bold text-xs">
+                            ⏳ Esperando
+                        </span>
+                    )
                 )}
             </div>
         </div>
@@ -140,6 +150,7 @@ export default function Dashboard() {
     const [marketLoans, setMarketLoans] = useState<Loan[]>([]);
     const [pendingPayments, setPendingPayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [rejectedPaymentModal, setRejectedPaymentModal] = useState<{ show: boolean, amount: string, message: string }>({ show: false, amount: '', message: '' });
 
     useEffect(() => {
         if (user) {
@@ -188,6 +199,19 @@ export default function Dashboard() {
                 } as Loan, ...prev];
             });
         });
+
+        // Listen for rejected payments
+        socket.on('payment_rejected', (data: any) => {
+            if (user && data.targetUserId === user.id) {
+                setRejectedPaymentModal({
+                    show: true,
+                    amount: data.amount,
+                    message: data.message
+                });
+                toast.error(`⚠️ Tu pago de S/. ${data.amount} fue rechazado`);
+            }
+        });
+
         return () => {
             socket.disconnect();
         };
@@ -240,6 +264,19 @@ export default function Dashboard() {
         } catch (error) {
             console.error(error);
             toast.error("Error al confirmar el pago");
+        }
+    };
+
+    const handleRejectPayment = async (paymentId: string) => {
+        try {
+            await api.post(`/loans/payments/${paymentId}/reject`);
+            toast.error("Pago rechazado. Se notificará al prestatario.");
+
+            // Remove from pending payments list
+            setPendingPayments(prev => prev.filter(p => p.id !== paymentId));
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al rechazar el pago");
         }
     };
 
@@ -397,7 +434,7 @@ export default function Dashboard() {
                 {pendingPayments.length > 0 && (
                     <section>
                         <h3 className="font-bold text-purple-600 mb-4 flex items-center gap-2">
-                            <DollarSign size={20} />
+                            <span className="text-lg font-bold">S/.</span>
                             Pagos Pendientes de Confirmar
                         </h3>
                         {pendingPayments.map(payment => (
@@ -419,12 +456,20 @@ export default function Dashboard() {
                                             })}
                                         </p>
                                     </div>
-                                    <button
-                                        onClick={() => handleConfirmPayment(payment.id)}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
-                                    >
-                                        ✓ Confirmar
-                                    </button>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => handleConfirmPayment(payment.id)}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
+                                        >
+                                            ✓ Confirmar
+                                        </button>
+                                        <button
+                                            onClick={() => handleRejectPayment(payment.id)}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
+                                        >
+                                            ✗ No Verificar
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -466,6 +511,35 @@ export default function Dashboard() {
                                     Cancelar
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Payment Rejected Modal */}
+            {rejectedPaymentModal.show && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
+                        <div className="text-center">
+                            <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-4xl">❌</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-red-600 mb-2">¡Pago Rechazado!</h3>
+                            <p className="text-gray-600 text-sm mb-4">
+                                El prestamista indica que <strong>NO recibió</strong> tu pago de:
+                            </p>
+                            <p className="text-3xl font-bold text-red-500 mb-4">
+                                S/. {rejectedPaymentModal.amount}
+                            </p>
+                            <p className="text-gray-500 text-xs mb-6">
+                                Por favor verifica que enviaste el dinero al número correcto y vuelve a subir el comprobante.
+                            </p>
+                            <button
+                                onClick={() => setRejectedPaymentModal({ show: false, amount: '', message: '' })}
+                                className="w-full bg-[var(--primary)] text-white font-bold py-3 rounded-xl hover:bg-[var(--primary-dark)] transition-colors"
+                            >
+                                Entendido
+                            </button>
                         </div>
                     </div>
                 </div>
