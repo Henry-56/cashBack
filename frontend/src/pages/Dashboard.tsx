@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { MainLayout } from '../components/MainLayout';
 import { Link } from 'react-router-dom';
-import { Settings, Bell, Clock, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
+import { Settings, Bell, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../api/client';
 import { toast } from 'react-hot-toast';
