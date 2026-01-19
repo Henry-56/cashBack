@@ -16,7 +16,7 @@ export default function TermsAndConditions() {
         <div className="min-h-screen bg-gradient-to-b from-[var(--primary)] to-[var(--primary-dark)] flex flex-col">
             {/* Header */}
             <div className="p-6 flex items-center justify-center">
-                <img src={logo} alt="CashBack" className="h-12" />
+                <img src={logo} alt="Emony" className="h-12" />
             </div>
 
             {/* Content */}
@@ -42,9 +42,9 @@ export default function TermsAndConditions() {
                                 <h2 className="font-bold text-[var(--primary)]">1. Descripción del Servicio</h2>
                             </div>
                             <p>
-                                CashBack es una plataforma tecnológica que facilita la conexión entre personas
+                                Emony es una plataforma tecnológica que facilita la conexión entre personas
                                 que solicitan préstamos y personas dispuestas a prestar dinero (modelo P2P).
-                                <strong> CashBack no es una entidad financiera</strong> y no proporciona el capital prestado.
+                                <strong> Emony no es una entidad financiera</strong> y no proporciona el capital prestado.
                             </p>
                         </section>
 
@@ -76,7 +76,7 @@ export default function TermsAndConditions() {
                                 <ul className="list-disc pl-5 space-y-1">
                                     <li>El prestatario puede incumplir el pago</li>
                                     <li>El prestamista asume el riesgo del capital</li>
-                                    <li>CashBack no garantiza la recuperación del dinero prestado</li>
+                                    <li>Emony no garantiza la recuperación del dinero prestado</li>
                                     <li>Las tasas de interés son acordadas entre las partes</li>
                                 </ul>
                             </div>
@@ -103,7 +103,7 @@ export default function TermsAndConditions() {
                                 <h2 className="font-bold text-[var(--primary)]">5. Limitación de Responsabilidad</h2>
                             </div>
                             <p>
-                                CashBack actúa únicamente como intermediario tecnológico. No somos responsables
+                                Emony actúa únicamente como intermediario tecnológico. No somos responsables
                                 por disputas entre usuarios, incumplimientos de pago, fraudes o pérdidas económicas
                                 derivadas del uso de la plataforma. Cada usuario es responsable de verificar la
                                 identidad y confiabilidad de las contrapartes.
@@ -131,7 +131,7 @@ export default function TermsAndConditions() {
                             />
                             <span className="text-sm text-gray-700">
                                 He leído y acepto los <strong>Términos y Condiciones</strong> y la
-                                <strong> Política de Privacidad</strong> de CashBack. Entiendo los riesgos
+                                <strong> Política de Privacidad</strong> de Emony. Entiendo los riesgos
                                 asociados a los préstamos entre personas.
                             </span>
                         </label>

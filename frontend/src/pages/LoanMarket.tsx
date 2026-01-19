@@ -4,6 +4,7 @@ import { ArrowLeft, SlidersHorizontal } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { maskName } from '../utils/maskData';
 
 interface Loan {
     id: string;
@@ -104,7 +105,7 @@ export default function LoanMarket() {
                                         <p className="text-xs text-gray-400 mt-1">Solicitado el {new Date(loan.createdAt).toLocaleDateString()}</p>
 
                                         <div className="mt-2">
-                                            <p className="font-bold text-sm text-[var(--primary)]">{loan.user?.fullName || 'Usuario'}</p>
+                                            <p className="font-bold text-sm text-[var(--primary)]">{maskName(loan.user?.fullName || 'Usuario')}</p>
                                             <div className="flex text-yellow-400 text-xs">
                                                 {'★'.repeat(Math.round(Number(loan.user?.rating || 0)))}
                                                 <span className="text-gray-300">{'★'.repeat(5 - Math.round(Number(loan.user?.rating || 0)))}</span>
