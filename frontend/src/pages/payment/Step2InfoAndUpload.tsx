@@ -109,6 +109,35 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
                 </div>
             </div>
 
+            {/* Lender Payment Info */}
+            {loan.lenderPhone && (
+                <div className="w-full bg-gradient-to-r from-purple-50 to-green-50 border border-purple-200 rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-purple-600 font-bold text-sm">📱 Envía el pago a:</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="font-bold text-lg text-gray-800">{loan.lenderPhone}</p>
+                            {loan.lenderName && (
+                                <p className="text-sm text-gray-500">{loan.lenderName}</p>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">Yape</span>
+                            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">Plin</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!loan.lenderPhone && loan.lenderId && (
+                <div className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                    <p className="text-yellow-700 text-sm">
+                        ⚠️ El prestamista no ha registrado su número de Yape/Plin.
+                    </p>
+                </div>
+            )}
+
             <div className="text-left w-full mb-4">
                 <h3 className="font-bold text-[var(--primary)] mb-1">Comprobante de pago</h3>
                 <p className="text-gray-500 text-sm">

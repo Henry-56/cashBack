@@ -56,7 +56,39 @@ export class LoanService {
     }
 
     async getLoansByUser(userId: string) {
-        return await db.select().from(loans).where(eq(loans.userId, userId));
+        const userLoans = await db.select().from(loans).where(eq(loans.userId, userId));
+
+        // Enrich each loan with payment progress
+        const enrichedLoans = await Promise.all(userLoans.map(async (loan) => {
+            const loanPayments = await db.select()
+                .from(payments)
+                .where(eq(payments.loanId, loan.id));
+
+            const completedPayments = loanPayments.filter(p => p.status === 'COMPLETED');
+            const pendingPayments = loanPayments.filter(p => p.status === 'PENDING');
+            const totalPaid = completedPayments.reduce((sum, p) => sum + parseFloat(p.amountPaid), 0);
+            const totalDue = parseFloat(loan.totalAmountDue);
+            const remaining = Math.max(0, totalDue - totalPaid);
+
+            // Calculate installment info
+            const installmentAmount = totalDue / loan.termMonths;
+            const paidInstallments = Math.floor(totalPaid / installmentAmount);
+            const totalInstallments = loan.termMonths;
+
+            return {
+                ...loan,
+                paymentProgress: {
+                    totalPaid: totalPaid.toFixed(2),
+                    remaining: remaining.toFixed(2),
+                    paidInstallments,
+                    totalInstallments,
+                    pendingConfirmations: pendingPayments.length,
+                    completedPayments: completedPayments.length
+                }
+            };
+        }));
+
+        return enrichedLoans;
     }
 
     async getLoansByLender(lenderId: string) {
@@ -89,7 +121,8 @@ export class LoanService {
     }
 
     async getLoanById(id: string) {
-        const result = await db.select({
+        // First get the loan with borrower info
+        const loanResult = await db.select({
             id: loans.id,
             amountRequested: loans.amountRequested,
             totalAmountDue: loans.totalAmountDue,
@@ -98,13 +131,34 @@ export class LoanService {
             createdAt: loans.createdAt,
             userId: loans.userId,
             lenderId: loans.lenderId,
-            borrowerName: users.fullName
+            borrowerName: users.fullName,
+            borrowerPhone: users.phone
         })
             .from(loans)
             .leftJoin(users, eq(loans.userId, users.id))
             .where(eq(loans.id, id));
 
-        return result[0];
+        if (!loanResult[0]) return null;
+
+        const loan = loanResult[0];
+
+        // If there's a lender, get their info
+        let lenderInfo = null;
+        if (loan.lenderId) {
+            const lenderResult = await db.select({
+                fullName: users.fullName,
+                phone: users.phone
+            })
+                .from(users)
+                .where(eq(users.id, loan.lenderId));
+            lenderInfo = lenderResult[0] || null;
+        }
+
+        return {
+            ...loan,
+            lenderName: lenderInfo?.fullName || null,
+            lenderPhone: lenderInfo?.phone || null
+        };
     }
 
     async fundLoan(loanId: string, lenderId: string) {
@@ -178,12 +232,95 @@ export class LoanService {
             });
         }
 
-        // 3. Update Loan Status? 
-        // Not yet, wait for confirmation. 
-        // But we might want to flag it? 
-        // Schema doesn't have "AWAITING_PAYMENT_CONFIRMATION" for loan. 
-        // We rely on the payment status 'PENDING' to show it in UI.
+        // 3. Check if loan is fully paid and mark as COMPLETED
+        await this.checkAndCompleteLoan(loanId);
 
         return payment;
     }
+
+    async checkAndCompleteLoan(loanId: string) {
+        // Get the loan details
+        const [loan] = await db.select().from(loans).where(eq(loans.id, loanId));
+        if (!loan) return null;
+
+        // Get all COMPLETED payments for this loan
+        const allPayments = await db.select()
+            .from(payments)
+            .where(eq(payments.loanId, loanId));
+
+        // Sum up all completed payments
+        const totalPaid = allPayments
+            .filter(p => p.status === 'COMPLETED')
+            .reduce((sum, p) => sum + parseFloat(p.amountPaid), 0);
+
+        const totalDue = parseFloat(loan.totalAmountDue);
+
+        console.log(`Loan ${loanId}: Paid ${totalPaid} / ${totalDue}`);
+
+        // If fully paid, mark as COMPLETED
+        if (totalPaid >= totalDue) {
+            const [updatedLoan] = await db.update(loans)
+                .set({ status: 'COMPLETED' })
+                .where(eq(loans.id, loanId))
+                .returning();
+
+            console.log(`Loan ${loanId} marked as COMPLETED!`);
+            return updatedLoan;
+        }
+
+        return null;
+    }
+
+    async confirmPayment(paymentId: string) {
+        // Mark payment as COMPLETED
+        const [payment] = await db.update(payments)
+            .set({ status: 'COMPLETED' })
+            .where(eq(payments.id, paymentId))
+            .returning();
+
+        if (payment) {
+            // Check if loan is now fully paid
+            await this.checkAndCompleteLoan(payment.loanId);
+        }
+
+        return payment;
+    }
+
+    async getPendingPaymentsForLender(lenderId: string) {
+        // Get all loans where this user is the lender
+        const lenderLoans = await db.select({
+            loanId: loans.id,
+            amountRequested: loans.amountRequested,
+            totalAmountDue: loans.totalAmountDue,
+            borrowerId: loans.userId,
+            borrowerName: users.fullName
+        })
+            .from(loans)
+            .leftJoin(users, eq(loans.userId, users.id))
+            .where(eq(loans.lenderId, lenderId));
+
+        if (lenderLoans.length === 0) return [];
+
+        const loanIds = lenderLoans.map(l => l.loanId);
+
+        // Get pending payments for those loans
+        const pendingPayments = await db.select()
+            .from(payments)
+            .where(eq(payments.status, 'PENDING'));
+
+        // Filter to only payments for lender's loans and enrich with loan info
+        const enrichedPayments = pendingPayments
+            .filter(p => loanIds.includes(p.loanId))
+            .map(p => {
+                const loan = lenderLoans.find(l => l.loanId === p.loanId);
+                return {
+                    ...p,
+                    borrowerName: loan?.borrowerName || 'Usuario',
+                    loanTotal: loan?.totalAmountDue
+                };
+            });
+
+        return enrichedPayments;
+    }
 }
+

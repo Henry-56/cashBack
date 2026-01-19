@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { MainLayout } from '../components/MainLayout';
 import { Link } from 'react-router-dom';
-import { Settings, Bell, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Settings, Bell, Clock, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../api/client';
 import { toast } from 'react-hot-toast';
@@ -18,6 +18,14 @@ interface Loan {
     user?: {
         fullName: string;
         rating: string;
+    };
+    paymentProgress?: {
+        totalPaid: string;
+        remaining: string;
+        paidInstallments: number;
+        totalInstallments: number;
+        pendingConfirmations: number;
+        completedPayments: number;
     };
 }
 
@@ -40,6 +48,8 @@ const ActiveLoanCard = ({ loan, onConfirm, onReject }: { loan: Loan, onConfirm?:
     const dateStr = nextDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 
     const isAwaiting = loan.status === 'AWAITING_CONFIRMATION';
+    const progress = loan.paymentProgress;
+    const progressPercent = progress ? (progress.paidInstallments / progress.totalInstallments) * 100 : 0;
 
     return (
         <div className={`rounded-2xl p-5 shadow-lg relative overflow-hidden mb-4 ${isAwaiting ? 'bg-orange-500' : 'bg-[var(--primary)]'} text-white`}>
@@ -53,8 +63,31 @@ const ActiveLoanCard = ({ loan, onConfirm, onReject }: { loan: Loan, onConfirm?:
                     <span className="bg-white/20 text-xs px-2 py-1 rounded">
                         {isAwaiting ? '¿LLEGÓ EL DINERO?' : 'Préstamo Activo'}
                     </span>
-                    <h3 className="text-2xl font-bold mt-1">S/. {loan.totalAmountDue}</h3>
-                    {!isAwaiting && <p className="text-xs text-gray-300 mt-2">Próximo pago: <span className="text-white font-bold">{dateStr}</span></p>}
+                    <h3 className="text-2xl font-bold mt-1">S/. {progress?.remaining || loan.totalAmountDue}</h3>
+                    <p className="text-xs opacity-80">de S/. {loan.totalAmountDue}</p>
+
+                    {/* Payment Progress */}
+                    {progress && !isAwaiting && (
+                        <div className="mt-3">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                                <span>Cuotas pagadas</span>
+                                <span className="font-bold">{progress.paidInstallments}/{progress.totalInstallments}</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-2">
+                                <div
+                                    className="bg-green-400 h-2 rounded-full transition-all"
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                            {progress.pendingConfirmations > 0 && (
+                                <p className="text-xs mt-2 text-yellow-200 animate-pulse">
+                                    ⏳ {progress.pendingConfirmations} pago(s) pendiente(s) de confirmación
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {!isAwaiting && !progress && <p className="text-xs text-gray-300 mt-2">Próximo pago: <span className="text-white font-bold">{dateStr}</span></p>}
                 </div>
 
                 {isAwaiting ? (
@@ -105,6 +138,7 @@ export default function Dashboard() {
     const [borrowedLoans, setBorrowedLoans] = useState<Loan[]>([]);
     const [lentLoans, setLentLoans] = useState<Loan[]>([]);
     const [marketLoans, setMarketLoans] = useState<Loan[]>([]);
+    const [pendingPayments, setPendingPayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -112,8 +146,9 @@ export default function Dashboard() {
             setLoading(true);
             Promise.all([
                 api.get(`/loans?userId=${user.id}`), // Returns { borrowed: [], lent: [] }
-                api.get(`/loans/market?userId=${user.id}`)
-            ]).then(([userLoansRes, marketLoansRes]) => {
+                api.get(`/loans/market?userId=${user.id}`),
+                api.get(`/loans/payments/pending?lenderId=${user.id}`)
+            ]).then(([userLoansRes, marketLoansRes, pendingPaymentsRes]) => {
                 // Handle new structure
                 if (userLoansRes.data.borrowed) {
                     setBorrowedLoans(userLoansRes.data.borrowed);
@@ -124,9 +159,11 @@ export default function Dashboard() {
                 }
 
                 if (marketLoansRes.data) {
-                    // Filter out my own loans - TEMP DISABLED to debug
-                    // setMarketLoans(marketLoansRes.data.filter((l: any) => l.userId !== user.id));
                     setMarketLoans(marketLoansRes.data);
+                }
+
+                if (pendingPaymentsRes.data) {
+                    setPendingPayments(pendingPaymentsRes.data);
                 }
             }).catch(err => console.error(err))
                 .finally(() => setLoading(false));
@@ -185,6 +222,24 @@ export default function Dashboard() {
         } catch (error) {
             console.error(error);
             toast.error("No se pudo rechazar el préstamo. Inténtalo de nuevo.");
+        }
+    };
+
+    const handleConfirmPayment = async (paymentId: string) => {
+        try {
+            const res = await api.post(`/loans/payments/${paymentId}/confirm`);
+            toast.success("¡Pago confirmado!");
+
+            // Remove from pending payments list
+            setPendingPayments(prev => prev.filter(p => p.id !== paymentId));
+
+            // If loan was completed, show special message
+            if (res.data.loanCompleted) {
+                toast.success("🎉 ¡El préstamo ha sido pagado completamente!", { duration: 5000 });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al confirmar el pago");
         }
     };
 
@@ -332,6 +387,44 @@ export default function Dashboard() {
                                 <div className="text-right">
                                     <p className="text-xs text-gray-500">Retorno</p>
                                     <p className="font-bold text-green-600">S/. {loan.totalAmountDue}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </section>
+                )}
+
+                {/* Pagos Pendientes de Confirmar (Para Prestamistas) */}
+                {pendingPayments.length > 0 && (
+                    <section>
+                        <h3 className="font-bold text-purple-600 mb-4 flex items-center gap-2">
+                            <DollarSign size={20} />
+                            Pagos Pendientes de Confirmar
+                        </h3>
+                        {pendingPayments.map(payment => (
+                            <div key={payment.id} className="bg-gradient-to-r from-purple-50 to-green-50 rounded-xl p-4 border border-purple-200 mb-3 shadow-sm">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-xs text-purple-600 font-bold mb-1 animate-pulse">
+                                            💰 PAGO RECIBIDO - CONFIRMAR
+                                        </p>
+                                        <h3 className="font-bold text-[var(--primary)] text-xl">S/. {payment.amountPaid}</h3>
+                                        <p className="text-sm text-gray-600 mt-1">De: <span className="font-medium">{payment.borrowerName}</span></p>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            {new Date(payment.paymentDate || payment.createdAt).toLocaleDateString('es-ES', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleConfirmPayment(payment.id)}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
+                                    >
+                                        ✓ Confirmar
+                                    </button>
                                 </div>
                             </div>
                         ))}

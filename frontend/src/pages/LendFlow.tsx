@@ -160,6 +160,32 @@ export default function LendFlow() {
                             <p className="text-xl font-bold text-[var(--primary)]">{loan.borrowerName || "Usuario Oculto"}</p>
                         </div>
 
+                        {/* Borrower Payment Info */}
+                        {loan.borrowerPhone && (
+                            <div className="w-full bg-gradient-to-r from-purple-50 to-green-50 border border-purple-200 rounded-xl p-4 mb-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-purple-600 font-bold text-sm">📱 Envía el dinero a:</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-bold text-2xl text-gray-800">{loan.borrowerPhone}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">Yape</span>
+                                        <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">Plin</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!loan.borrowerPhone && (
+                            <div className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                                <p className="text-yellow-700 text-sm">
+                                    ⚠️ El solicitante no ha registrado su número de Yape/Plin.
+                                </p>
+                            </div>
+                        )}
+
                         <button
                             onClick={() => setStep(2)}
                             className="w-full bg-[var(--primary)] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-[var(--primary-dark)] transition-colors"

@@ -162,3 +162,42 @@ export const registerPayment = async (req: Request, res: Response) => {
         res.status(400).json({ error: error.message });
     }
 };
+
+export const confirmPayment = async (req: Request, res: Response) => {
+    try {
+        const { paymentId } = req.params;
+        const payment = await loanService.confirmPayment(paymentId);
+
+        if (!payment) {
+            return res.status(404).json({ error: "Payment not found" });
+        }
+
+        // Check if loan was completed
+        const loan = await loanService.getLoanById(payment.loanId);
+
+        if (loan && loan.status === 'COMPLETED') {
+            getIO().emit('loan_completed', {
+                loanId: loan.id,
+                borrowerId: loan.userId,
+                lenderId: loan.lenderId,
+                message: `¡El préstamo ha sido pagado completamente!`
+            });
+        }
+
+        res.json({ payment, loanCompleted: loan?.status === 'COMPLETED' });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+export const getPendingPaymentsForLender = async (req: Request, res: Response) => {
+    try {
+        const lenderId = req.query.lenderId as string;
+        if (!lenderId) throw new Error("Lender ID required");
+
+        const pendingPayments = await loanService.getPendingPaymentsForLender(lenderId);
+        res.json(pendingPayments);
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
+    }
+};
