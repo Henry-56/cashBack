@@ -20,7 +20,7 @@ export default function Documents() {
             <div className="px-6 py-4">
                 <h1 className="text-xl font-bold text-[var(--primary)] text-center mb-2">Sube tu comprobante de depósito</h1>
                 <p className="text-xs text-gray-500 text-center mb-8 px-4">
-                    Para validar el pago, adjunta la imagen del comprobante de la transferencia captura de la billetera digital.
+                    Para validar el pago, adjunta la imagen del comprobante de la transferencia (Yape, Plin) o captura de pantalla.
                 </p>
 
                 <div className="flex flex-col items-center justify-center space-y-4 mb-8">

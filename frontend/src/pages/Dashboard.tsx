@@ -7,6 +7,7 @@ import { io } from 'socket.io-client';
 import api from '../api/client';
 import { toast } from 'react-hot-toast';
 import logo from '../assets/logo.png';
+import { maskName } from '../utils/maskData';
 
 interface Loan {
     id: string;
@@ -445,7 +446,7 @@ export default function Dashboard() {
                                             💰 PAGO RECIBIDO - CONFIRMAR
                                         </p>
                                         <h3 className="font-bold text-[var(--primary)] text-xl">S/. {payment.amountPaid}</h3>
-                                        <p className="text-sm text-gray-600 mt-1">De: <span className="font-medium">{payment.borrowerName}</span></p>
+                                        <p className="text-sm text-gray-600 mt-1">De: <span className="font-medium">{maskName(payment.borrowerName)}</span></p>
                                         <p className="text-xs text-gray-400 mt-1">
                                             {new Date(payment.paymentDate || payment.createdAt).toLocaleDateString('es-ES', {
                                                 day: 'numeric',

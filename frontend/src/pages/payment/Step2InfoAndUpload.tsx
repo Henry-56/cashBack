@@ -3,6 +3,7 @@ import { ArrowLeft, UploadCloud, Clock, AlertCircle, CheckCircle, Loader2 } from
 import { useNavigate } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
 import { toast } from 'react-hot-toast';
+import { maskName } from '../../utils/maskData';
 
 interface Step2Props {
     loan: any;
@@ -61,7 +62,7 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
                 toast.error("Sube la captura del pago, no solo la app");
             } else {
                 setValidationStatus('invalid');
-                setValidationMessage('No se detectó un comprobante de billetera digital válido. Por favor sube una captura de pantalla del pago realizado.');
+                setValidationMessage('No se detectó un comprobante de Yape o Plin válido. Por favor sube una captura de pantalla del pago realizado.');
                 toast.error("No parece ser un comprobante válido");
             }
 
@@ -119,11 +120,12 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
                         <div>
                             <p className="font-bold text-lg text-gray-800">{loan.lenderPhone}</p>
                             {loan.lenderName && (
-                                <p className="text-sm text-gray-500">{loan.lenderName}</p>
+                                <p className="text-sm text-gray-500">{maskName(loan.lenderName)}</p>
                             )}
                         </div>
                         <div className="flex gap-2">
-                            <span className="bg-gradient-to-r from-purple-500 to-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">📱 Billetera Digital</span>
+                            <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">Yape</span>
+                            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">Plin</span>
                         </div>
                     </div>
                 </div>
@@ -132,7 +134,7 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
             {!loan.lenderPhone && loan.lenderId && (
                 <div className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
                     <p className="text-yellow-700 text-sm">
-                        ⚠️ El prestamista no ha registrado su número de billetera digital.
+                        ⚠️ El prestamista no ha registrado su número de Yape/Plin.
                     </p>
                 </div>
             )}
@@ -157,7 +159,7 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
                     <div className="text-left w-full mb-4">
                         <h3 className="font-bold text-[var(--primary)] mb-1">Comprobante de pago</h3>
                         <p className="text-gray-500 text-sm">
-                            Sube la captura de tu transferencia (billetera digital) por el monto indicado arriba.
+                            Sube la captura de tu transferencia (Yape/Plin) por el monto indicado arriba.
                         </p>
 
                         {/* Validation Status Indicator */}
