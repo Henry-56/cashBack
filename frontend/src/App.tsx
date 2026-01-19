@@ -16,6 +16,7 @@ import LoanList from './pages/LoanList';
 import Documents from './pages/Documents';
 import LendFlow from './pages/LendFlow';
 import LoanMarket from './pages/LoanMarket';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
+// Component to check if terms are accepted before allowing access
+const RequireTerms = ({ children }: { children: React.ReactNode }) => {
+  const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
+  if (!termsAccepted) return <Navigate to="/terms" replace />;
   return children;
 };
 
@@ -83,8 +91,9 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/terms" element={<TermsAndConditions />} />
+      <Route path="/login" element={<RequireTerms><Login /></RequireTerms>} />
+      <Route path="/register" element={<RequireTerms><Register /></RequireTerms>} />
       <Route
         path="/"
         element={
