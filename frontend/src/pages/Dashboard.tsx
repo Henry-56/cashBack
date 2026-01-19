@@ -339,7 +339,7 @@ export default function Dashboard() {
                                 <div key={loan.id} className="bg-gray-200 rounded-2xl p-6 flex justify-between items-center transform transition-all hover:scale-[1.02]">
                                     <div>
                                         <h4 className="text-[var(--primary)] font-bold text-2xl">S/.{loan.amountRequested}</h4>
-                                        <p className="text-sm font-bold text-gray-700">{loan.user?.fullName || 'Usuario'}</p>
+                                        <p className="text-sm font-bold text-gray-700">{maskName(loan.user?.fullName || 'Usuario')}</p>
                                         <div className="flex items-center text-yellow-500 text-xs">
                                             {'★'.repeat(Math.round(Number(loan.user?.rating || 0)))}
                                             <span className="text-gray-300">{'★'.repeat(5 - Math.round(Number(loan.user?.rating || 0)))}</span>
