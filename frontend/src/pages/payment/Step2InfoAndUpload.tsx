@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, UploadCloud, Clock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { UploadCloud, Clock, AlertCircle, CheckCircle, Loader2, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
 import { toast } from 'react-hot-toast';
@@ -18,7 +18,6 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
     const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
     const [validationMessage, setValidationMessage] = useState('');
 
-    // Calculate installment
     const installmentAmount = loan ? (parseFloat(loan.totalAmountDue) / parseFloat(loan.termMonths)).toFixed(2) : "0.00";
 
     const validateImage = async (file: File) => {
@@ -27,49 +26,25 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
         setValidationMessage('Analizando comprobante con IA...');
 
         try {
-            const result = await Tesseract.recognize(
-                file,
-                'eng+spa', // Use both English and Spanish models
-                {
-                    logger: m => console.log(m)
-                }
-            );
-
+            const result = await Tesseract.recognize(file, 'eng+spa');
             const text = result.data.text.toLowerCase();
-            console.log("Extracted text:", text);
-
-            // PRIMARY keywords - must find at least one of these (app/bank names)
             const primaryKeywords = ['yape', 'plin', 'bcp', 'bbva', 'interbank', 'scotiabank'];
-
-            // SECONDARY keywords - transaction indicators
             const transactionKeywords = ['pagaste', 'enviaste', 'recibiste', 'transferencia', 'operación', 'operacion', 'soles', 's/.'];
 
             const foundPrimary = primaryKeywords.filter(keyword => text.includes(keyword));
             const foundTransaction = transactionKeywords.filter(keyword => text.includes(keyword));
 
-            console.log("Found primary:", foundPrimary);
-            console.log("Found transaction:", foundTransaction);
-
-            // Must have at least 1 primary keyword AND at least 1 transaction keyword
             if (foundPrimary.length > 0 && foundTransaction.length > 0) {
                 setValidationStatus('valid');
-                setValidationMessage(`¡Comprobante válido! Se detectó: ${foundPrimary[0]} + ${foundTransaction[0]}`);
-                toast.success("Comprobante validado correctamente");
-            } else if (foundPrimary.length > 0) {
-                // Found app name but no transaction
-                setValidationStatus('invalid');
-                setValidationMessage('Se detectó la app pero no el comprobante de pago. Sube una captura del pago enviado.');
-                toast.error("Sube la captura del pago, no solo la app");
+                setValidationMessage(`¡Comprobante válido detectado! (${foundPrimary[0]})`);
+                toast.success("Pago validado");
             } else {
                 setValidationStatus('invalid');
-                setValidationMessage('No se detectó un comprobante de Yape o Plin válido. Por favor sube una captura de pantalla del pago realizado.');
-                toast.error("No parece ser un comprobante válido");
+                setValidationMessage('No se detectó un comprobante claro. Intenta con otra captura.');
             }
-
         } catch (error) {
-            console.error("OCR Error:", error);
             setValidationStatus('invalid');
-            setValidationMessage('Error al analizar la imagen. Intenta de nuevo.');
+            setValidationMessage('Error al analizar la imagen.');
         } finally {
             setIsValidating(false);
         }
@@ -80,138 +55,130 @@ export const Step2InfoAndUpload: React.FC<Step2Props> = ({ loan, onNext, setFile
             const f = e.target.files[0];
             setFile(f);
             setPreview(URL.createObjectURL(f));
-
-            // Trigger validation
             validateImage(f);
         }
     };
 
-    if (!loan) return <div>Cargando información del préstamo...</div>;
+    if (!loan) return <div className="p-8 text-center text-gray-400 font-bold">Cargando detalles...</div>;
 
     return (
-        <div className="min-h-screen bg-white p-6 flex flex-col items-center animate-fade-in">
-            <div className="w-full flex items-center mb-6">
-                <button onClick={() => navigate(-1)} className="mr-4">
-                    <ArrowLeft className="text-[var(--primary)]" />
-                </button>
-                <h1 className="text-[var(--primary)] font-bold text-xl">Pagar cuota</h1>
+        <div className="space-y-8 animate-enter">
+            <div className="text-center mb-8">
+                <div className="mx-auto w-20 h-20 bg-teal-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner text-teal-600">
+                    <Clock size={40} />
+                </div>
+                <h2 className="text-3xl font-black text-[var(--primary)] tracking-tight mb-2">Validar Pago</h2>
+                <p className="text-[var(--text-muted)] font-medium">Sube la captura de tu transferencia de cuota.</p>
             </div>
 
-            {/* Info Card */}
-            <div className="w-full bg-[var(--primary)] text-white rounded-2xl p-6 mb-8 text-center shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-3 opacity-10">
-                    <Clock size={100} />
-                </div>
-                <p className="text-sm opacity-80 mb-1">Monto de cuota</p>
-                <h2 className="text-4xl font-bold mb-4">S/. {installmentAmount}</h2>
-                <div className="flex justify-between text-xs border-t border-white/20 pt-3 opacity-90">
-                    <span>Plazo total: {loan.termMonths} semanas</span>
-                    <span>Total deuda: S/. {loan.totalAmountDue}</span>
-                </div>
-            </div>
-
-            {/* Lender Payment Info */}
-            {loan.lenderPhone && (
-                <div className="w-full bg-gradient-to-r from-purple-50 to-green-50 border border-purple-200 rounded-xl p-4 mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="text-purple-600 font-bold text-sm">📱 Envía el pago a:</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-bold text-lg text-gray-800">{loan.lenderPhone}</p>
-                            {loan.lenderName && (
-                                <p className="text-sm text-gray-500">{maskName(loan.lenderName)}</p>
-                            )}
+            {/* Premium Info Card */}
+            <div className="bg-[var(--primary)] text-white rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden mb-8">
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                <div className="relative z-10 text-center">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 mb-2">Cuota a Pagar</p>
+                    <h3 className="text-5xl font-black tracking-tighter mb-6">S/. {installmentAmount}</h3>
+                    <div className="flex justify-between items-center bg-white/10 p-4 rounded-2xl border border-white/5">
+                        <div className="text-left">
+                            <p className="text-[8px] font-bold opacity-50 uppercase tracking-widest">Plazo</p>
+                            <p className="text-xs font-black">{loan.termMonths} Semanas</p>
                         </div>
-                        <div className="flex gap-2">
-                            <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">Yape</span>
-                            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">Plin</span>
+                        <div className="text-right">
+                            <p className="text-[8px] font-bold opacity-50 uppercase tracking-widest">Deuda Total</p>
+                            <p className="text-xs font-black">S/. {loan.totalAmountDue}</p>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {!loan.lenderPhone && loan.lenderId && (
-                <div className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                    <p className="text-yellow-700 text-sm">
-                        ⚠️ El prestamista no ha registrado su número de Yape/Plin.
-                    </p>
+            {/* Instruction / Lender Info */}
+            <div className="bg-white rounded-[2.5rem] p-8 shadow-premium border border-gray-50 space-y-6">
+                <div className="flex items-start gap-4">
+                    <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600 shrink-0"><ShieldCheck size={24} /></div>
+                    <div>
+                        <h4 className="text-sm font-black text-[var(--primary)] uppercase tracking-tight">Depositar a:</h4>
+                        <p className="text-2xl font-black text-indigo-900 tracking-tighter mt-1">{loan.lenderPhone || '--- --- ---'}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{maskName(loan.lenderName || 'Prestamista')}</p>
+                    </div>
                 </div>
-            )}
+
+                <div className="flex gap-2">
+                    <span className="bg-purple-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Yape</span>
+                    <span className="bg-green-500 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Plin</span>
+                </div>
+            </div>
 
             {/* Block if pending confirmations */}
             {loan.paymentProgress?.pendingConfirmations > 0 && (
-                <div className="w-full bg-orange-100 border-2 border-orange-400 rounded-xl p-6 mb-4 text-center">
-                    <div className="text-4xl mb-3">⏳</div>
-                    <h3 className="font-bold text-orange-700 text-lg mb-2">Pagos Pendientes de Confirmación</h3>
-                    <p className="text-orange-600 text-sm mb-4">
-                        Tienes <strong>{loan.paymentProgress.pendingConfirmations} pago(s)</strong> esperando confirmación del prestamista.
-                    </p>
-                    <p className="text-orange-500 text-xs">
-                        No puedes realizar más pagos hasta que se confirmen los anteriores.
+                <div className="p-8 bg-amber-50 border-2 border-amber-200 rounded-[2.5rem] text-center mb-4">
+                    <div className="bg-amber-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-600">
+                        <Clock size={32} />
+                    </div>
+                    <h4 className="font-black text-amber-900 text-lg mb-2 tracking-tight">Pagos en Verificación</h4>
+                    <p className="text-amber-700 text-xs font-medium leading-relaxed">
+                        Tienes <strong>{loan.paymentProgress.pendingConfirmations} pago(s)</strong> pendientes. Espera a que el prestamista los confirme para realizar uno nuevo.
                     </p>
                 </div>
             )}
 
-            {/* Show payment form only if no pending confirmations */}
             {(!loan.paymentProgress || loan.paymentProgress.pendingConfirmations === 0) && (
-                <>
-                    <div className="text-left w-full mb-4">
-                        <h3 className="font-bold text-[var(--primary)] mb-1">Comprobante de pago</h3>
-                        <p className="text-gray-500 text-sm">
-                            Sube la captura de tu transferencia (Yape/Plin) por el monto indicado arriba.
-                        </p>
-
-                        {/* Validation Status Indicator */}
-                        {preview && (
-                            <div className={`mt-3 p-3 rounded-lg flex items-start space-x-2 text-sm transition-all
-                        ${isValidating ? 'bg-blue-50 text-blue-700' : ''}
-                        ${validationStatus === 'valid' ? 'bg-green-50 text-green-700' : ''}
-                        ${validationStatus === 'invalid' ? 'bg-red-50 text-red-700' : ''}
-                    `}>
-                                {isValidating && <Loader2 className="animate-spin shrink-0" size={18} />}
-                                {validationStatus === 'valid' && <CheckCircle className="shrink-0" size={18} />}
-                                {validationStatus === 'invalid' && <AlertCircle className="shrink-0" size={18} />}
-                                <span className="font-medium">{validationMessage}</span>
+                <div className="space-y-6">
+                    {/* Upload Box */}
+                    <div
+                        className={`w-full h-80 border-4 border-dashed rounded-[3rem] flex flex-col items-center justify-center bg-white cursor-pointer transition-all relative overflow-hidden shadow-premium
+                            ${validationStatus === 'valid' ? 'border-teal-500 bg-teal-50/30' : 'border-gray-100 hover:border-indigo-200'}
+                            ${validationStatus === 'invalid' ? 'border-red-200 bg-red-50/30' : ''}
+                        `}
+                        onClick={() => !isValidating && document.getElementById('payment-proof-upload')?.click()}
+                    >
+                        {preview ? (
+                            <img src={preview} alt="Comprobante" className={`w-full h-full object-cover transition-opacity ${isValidating ? 'opacity-30' : 'opacity-100'}`} />
+                        ) : (
+                            <div className="text-center p-8">
+                                <div className="bg-indigo-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-indigo-600 shadow-inner">
+                                    <UploadCloud size={32} />
+                                </div>
+                                <span className="text-[var(--primary)] font-black uppercase tracking-widest text-xs">Captura del Pago</span>
+                                <p className="text-[10px] text-gray-400 mt-2 font-medium">Click para abrir la galería</p>
                             </div>
                         )}
-                    </div>
 
-                    <div className={`w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center bg-gray-50 cursor-pointer transition-colors relative overflow-hidden
-                ${validationStatus === 'valid' ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:bg-gray-100'}
-                ${validationStatus === 'invalid' ? 'border-red-300 bg-red-50' : ''}
-            `}
-                        onClick={() => !isValidating && document.getElementById('payment-proof-upload')?.click()}>
-
-                        {preview ? (
-                            <img src={preview} alt="Comprobante" className={`w-full h-full object-cover transition-opacity ${isValidating ? 'opacity-50' : 'opacity-100'}`} />
-                        ) : (
-                            <>
-                                <UploadCloud size={40} className="text-gray-300 mb-2" />
-                                <span className="text-[var(--primary)] font-bold text-sm">Toca para subir imagen</span>
-                            </>
+                        {isValidating && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
+                                <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
+                                <span className="text-indigo-900 font-black uppercase tracking-widest text-[10px]">Verificando Transacción...</span>
+                            </div>
                         )}
 
-                        <input
-                            id="payment-proof-upload"
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            disabled={isValidating}
-                        />
+                        <input id="payment-proof-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} disabled={isValidating} />
                     </div>
+
+                    {/* Validation Feedback */}
+                    {validationStatus !== 'idle' && (
+                        <div className={`p-6 rounded-[2rem] flex items-start gap-4 animate-enter ${validationStatus === 'valid' ? 'bg-teal-50 border border-teal-100 text-teal-800' : 'bg-red-50 border border-red-100 text-red-800'}`}>
+                            <div className={`p-2 rounded-xl text-white ${validationStatus === 'valid' ? 'bg-teal-500' : 'bg-red-500'}`}>
+                                {validationStatus === 'valid' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                            </div>
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-tight mb-1">{validationStatus === 'valid' ? '¡Pago Detectado!' : 'Error de Lectura'}</p>
+                                <p className="text-xs font-medium opacity-80">{validationMessage}</p>
+                            </div>
+                        </div>
+                    )}
 
                     <button
                         onClick={onNext}
                         disabled={!preview || isValidating || validationStatus !== 'valid'}
-                        className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg text-white transition-colors mt-auto
-                    ${!preview || isValidating || validationStatus !== 'valid' ? 'bg-gray-400 cursor-not-allowed' : 'bg-[var(--primary)] hover:bg-[var(--primary-dark)]'}`}
+                        className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-premium text-white transition-all uppercase tracking-widest active:scale-95
+                            ${!preview || isValidating || validationStatus !== 'valid' ? 'bg-gray-200 cursor-not-allowed shadow-none' : 'bg-[var(--primary)] hover:bg-[var(--primary-light)]'}`}
                     >
-                        {isValidating ? 'Analizando...' : 'Confirmar Envío'}
+                        {isValidating ? 'Procesando...' : 'Confirmar Pago'}
                     </button>
-                </>
+                </div>
             )}
+
+            <button onClick={() => navigate(-1)} className="w-full text-gray-400 font-black text-xs uppercase tracking-widest py-4 hover:text-gray-600 transition-all">
+                Cancelar Operación
+            </button>
         </div>
     );
 };

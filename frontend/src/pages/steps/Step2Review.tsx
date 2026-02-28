@@ -1,91 +1,103 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, Info, Calendar, ArrowRight, TrendingUp } from 'lucide-react';
 
 interface Step2Props {
     data: {
         amount: number;
         termMonths: number;
-        interestRate: number;
     };
     onSubmit: () => void;
 }
 
-export const Step2Review: React.FC<Step2Props> = ({ data, onSubmit }) => {
-    const navigate = useNavigate();
+const RATES: Record<number, number> = { 1: 8, 2: 12, 3: 16, 4: 20 };
 
-    const RATES: Record<number, number> = { 1: 8, 2: 12, 3: 16, 4: 20 };
+export const Step2Review: React.FC<Step2Props> = ({ data, onSubmit }) => {
     const ratePercent = RATES[data.termMonths] || 20;
     const interestAmount = data.amount * (ratePercent / 100);
     const totalAmount = data.amount + interestAmount;
 
+    // Mock date calculation
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + (data.termMonths * 7));
+
     return (
-        <div className="min-h-screen bg-[var(--bg-light)]">
-            {/* Header */}
-            <div className="bg-white p-4 flex items-center shadow-sm sticky top-0">
-                <button onClick={() => navigate(-1)} className="mr-4">
-                    <ArrowLeft className="text-[var(--primary)]" />
-                </button>
-                <h1 className="text-[var(--primary)] font-bold text-center flex-1 pr-8">Solicitar Préstamo</h1>
+        <div className="space-y-8 animate-enter">
+            <div className="text-center mb-8">
+                <div className="mx-auto w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
+                    <ShieldCheck className="text-indigo-600 w-10 h-10" />
+                </div>
+                <h2 className="text-3xl font-black text-[var(--primary)] tracking-tight mb-2">Revisa tu solicitud</h2>
+                <p className="text-[var(--text-muted)] font-medium">Confirma los detalles antes de firmar el contrato.</p>
             </div>
 
-            <div className="p-6">
-                <div className="text-center mb-6">
-                    <h2 className="text-[var(--primary)] font-bold text-lg">Revisa tu solicitud</h2>
-                    <p className="text-gray-400 text-sm">Confirma los detalles antes de enviar</p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4 mb-8">
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500">Monto Solicitado:</span>
-                        <span className="font-bold text-[var(--primary)]">S/. {data.amount.toFixed(2)}</span>
-                    </div>
-                    <div className="h-px bg-gray-100 my-2"></div>
-                    <div className="flex justify-between items-center text-lg font-bold">
-                        <span className="text-[var(--primary)]">Monto a Recibir:</span>
-                        <span className="text-[var(--primary)]">S/. {data.amount.toFixed(2)}</span>
-                    </div>
-
-                    <div className="bg-green-50 p-4 rounded-xl mt-4">
-                        <div className="flex justify-between items-center text-sm mb-1">
-                            <span className="text-green-700">Interés por {data.termMonths} semana(s) ({ratePercent}%):</span>
-                            <span className="font-bold text-green-700">+ S/. {interestAmount.toFixed(2)}</span>
+            <div className="space-y-4">
+                {/* Details Grid */}
+                <div className="bg-white rounded-[2.5rem] p-8 shadow-premium border border-gray-50 space-y-6">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto Solicitado</p>
+                            <h4 className="text-3xl font-black text-[var(--primary)] tracking-tighter">S/. {data.amount.toFixed(2)}</h4>
                         </div>
-                        <div className="flex justify-between items-center text-xl font-bold mt-2 pt-2 border-t border-green-200">
-                            <span className="text-[var(--primary)]">Total a Pagar:</span>
-                            <span className="text-[var(--primary)]">S/. {totalAmount.toFixed(2)}</span>
+                        <div className="bg-teal-50 text-teal-600 p-3 rounded-2xl">
+                            <Info size={20} />
                         </div>
                     </div>
 
-                    <p className="text-[10px] text-gray-400 text-center mt-2">* El interés varía según el plazo (8% - 20%).</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 rounded-2xl p-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Calendar size={14} className="text-indigo-600" />
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plazo</p>
+                            </div>
+                            <p className="text-sm font-black text-[var(--primary)] uppercase">{data.termMonths} Semanas</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <TrendingUp size={14} className="text-teal-600" />
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tasa</p>
+                            </div>
+                            <p className="text-sm font-black text-[var(--primary)] uppercase">{ratePercent}% Total</p>
+                        </div>
+                    </div>
 
-                    <div className="bg-gray-50 rounded-xl p-4 mt-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Plazo:</span>
-                            <span className="font-bold">{data.termMonths} Semanas</span>
+                    <div className="h-px bg-gray-100"></div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm font-medium">
+                            <span className="text-gray-500">Capital</span>
+                            <span className="text-[var(--primary)] font-bold">S/. {data.amount.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Cuotas:</span>
-                            <span className="font-bold">{data.termMonths} cuota(s) semanales</span>
+                        <div className="flex justify-between items-center text-sm font-medium">
+                            <span className="text-gray-500">Intereses</span>
+                            <span className="text-teal-600 font-bold">S/. {interestAmount.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-sm border-t border-gray-200 pt-2 mt-2">
-                            <span className="text-gray-500">Monto por cuota:</span>
-                            <span className="font-bold text-[var(--primary)]">
-                                S/. {(totalAmount / data.termMonths).toFixed(2)}
-                            </span>
-                        </div>
-                        <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                            <span>1ra Cuota:</span>
-                            <span>Próxima Semana</span>
+                        <div className="flex justify-between items-center pt-2">
+                            <span className="text-base font-black text-[var(--primary)] uppercase tracking-widest">Total a pagar</span>
+                            <span className="text-2xl font-black text-[var(--primary)] tracking-tighter">S/. {totalAmount.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
 
+                {/* Info Box */}
+                <div className="bg-indigo-50/50 rounded-3xl p-6 border border-indigo-100 flex gap-4 items-start">
+                    <div className="bg-indigo-600 p-2 rounded-xl text-white shrink-0">
+                        <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-black text-indigo-900 uppercase tracking-tight mb-1">Protección Garantizada</h4>
+                        <p className="text-xs text-indigo-700 font-medium leading-relaxed">
+                            Al continuar, generarás un contrato digital legalmente vinculado bajo la legislación vigente de firmas electrónicas.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Final Action */}
                 <button
                     onClick={onSubmit}
-                    className="w-full bg-[var(--primary)] text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    className="w-full bg-[var(--primary)] hover:bg-[var(--primary-light)] text-white font-black py-6 rounded-[2rem] text-xl shadow-premium transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest mt-4"
                 >
-                    Solicitar Préstamo
+                    Ir a Firmar Contrato
+                    <ArrowRight size={24} />
                 </button>
             </div>
         </div>

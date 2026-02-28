@@ -9,23 +9,33 @@ export function maskName(name: string): string {
 
     const parts = name.trim().split(/\s+/);
 
-    if (parts.length === 1) {
-        // Single name: show it fully
-        return parts[0];
+    if (parts.length === 1) return parts[0];
+
+    // Heuristic for Peruvian/RENIEC full names: "APELLIDO_PATERNO APELLIDO_MATERNO NOMBRES"
+    // Handle both formats: If 3+ words, assume it's RENIEC (A1 A2 N1) and names start at index 2.
+    // If it's a mock or standard format "NAME A1 A2", this heuristic might overlap
+    // but the user's request confirms that real data starts with Surnames.
+
+    let firstName = parts[0];
+    let apellido1Initial = '';
+    let apellido2Initial = '';
+
+    if (parts.length >= 3) {
+        // Assume A1 A2 N1 format
+        firstName = parts[2] || parts[0];
+        apellido1Initial = parts[0].charAt(0).toUpperCase();
+        apellido2Initial = parts[1].charAt(0).toUpperCase();
+    } else if (parts.length === 2) {
+        // Assume A1 N1 or N1 A1
+        // Usually safer to show the first word in 2-word names unless user specifies
+        // But for consistency with the request, let's assume word 0 is surname
+        firstName = parts[1];
+        apellido1Initial = parts[0].charAt(0).toUpperCase();
     }
 
-    if (parts.length === 2) {
-        // First name + one last name: show first name + initial
-        return `${parts[0]} ${parts[1].charAt(0).toUpperCase()}.`;
-    }
-
-    // Multiple names: First name + initials of last two parts (assumed to be apellidos)
-    // "ANDERSHON SAUL RUIZ LANDEO" -> parts[0]=first, assume last 2 are apellidos
-    const firstName = parts[0];
-    const apellido1Initial = parts[parts.length - 2].charAt(0).toUpperCase();
-    const apellido2Initial = parts[parts.length - 1].charAt(0).toUpperCase();
-
-    return `${firstName} ${apellido1Initial}. ${apellido2Initial}.`;
+    return apellido2Initial
+        ? `${firstName} ${apellido1Initial}. ${apellido2Initial}.`
+        : `${firstName} ${apellido1Initial}.`;
 }
 
 /**

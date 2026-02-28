@@ -1,1 +1,6 @@
-732d6f2d-eb16-43aa-8212-d315080d1826
+732# Exposición Pública (Ngrok/Localtunnel)
+- [x] Flexibilizar CORS en `app.ts` y `socket.ts`.
+- [x] Configurar bypass de advertencias en `api/client.ts`.
+- [x] Crear archivo `.env` en frontend con URLs públicas.
+- [x] Guía de usuario para despliegue local.
+1826

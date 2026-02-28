@@ -6,13 +6,48 @@
   --primary: #023440;
   --primary-light: #006D77;
   --accent: #7EBEBF;
-  --bg-light: #F5F7FA;
+  --bg-light: #F8FAFC;
+  --text-main: #023440;
+  --text-muted: #64748B;
+  --glass: rgba(255, 255, 255, 1);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-premium: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
 }
 
 body {
   background-color: var(--bg-light);
-  color: #023440;
+  color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive Typography */
+.text-responsive-h1 {
+  font-size: clamp(1.875rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.text-responsive-h2 {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 700;
+}
+
+/* Glassmorphism utility */
+.glass-effect {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+/* Custom Containers */
+.container-premium {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
 }
 
 /* Hide scrollbar for horizontal scrolling areas */
@@ -23,4 +58,27 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Animations */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-enter {
+  animation: enter 0.4s ease-out forwards;
+}
+
+/* Smooth transitions for all interactive elements */
+a,
+button {
+  @apply transition-all duration-200;
 }

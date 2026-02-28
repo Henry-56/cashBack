@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle2, AlertTriangle, Scale, Lock, FileText } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, FileText, ChevronRight } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export default function TermsAndConditions() {
@@ -13,147 +13,121 @@ export default function TermsAndConditions() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[var(--primary)] to-[var(--primary-dark)] flex flex-col">
+        <div className="min-h-screen bg-[var(--primary)] text-white flex flex-col font-sans">
             {/* Header */}
-            <div className="p-6 flex items-center justify-center">
-                <img src={logo} alt="Emony" className="h-12" />
+            <div className="p-10 flex flex-col items-center">
+                <img src={logo} alt="Cashback" className="h-12 mb-8 brightness-0 invert opacity-90" />
+                <h1 className="text-4xl font-black tracking-tighter text-center">Protocolo Legal</h1>
+                <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Versión 2026.4.1</p>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 bg-white rounded-t-3xl p-6 overflow-y-auto">
-                <div className="max-w-lg mx-auto">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="bg-[var(--primary)]/10 p-3 rounded-full">
-                            <FileText className="text-[var(--primary)]" size={24} />
+            {/* Content Container */}
+            <div className="flex-1 bg-white rounded-t-[4rem] p-8 pb-64 overflow-y-auto shadow-2xl">
+                <div className="max-w-xl mx-auto space-y-10">
+                    <div className="flex items-center gap-4 py-8 border-b border-gray-50">
+                        <div className="bg-indigo-50 p-4 rounded-[2rem] text-indigo-600 shadow-inner">
+                            <FileText size={32} />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-[var(--primary)]">Términos y Condiciones</h1>
-                            <p className="text-sm text-gray-500">Última actualización: Enero 2026</p>
+                            <h2 className="text-2xl font-black text-[var(--primary)] tracking-tight">Términos de Uso</h2>
+                            <p className="text-xs text-gray-400 font-medium">Por favor, lee cuidadosamente antes de operar.</p>
                         </div>
                     </div>
 
-                    {/* Terms Sections */}
-                    <div className="space-y-6 text-sm text-gray-700 leading-relaxed">
-
-                        {/* Section 1 */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Shield size={18} className="text-[var(--primary)]" />
-                                <h2 className="font-bold text-[var(--primary)]">1. Descripción del Servicio</h2>
-                            </div>
-                            <p>
-                                Emony es una plataforma tecnológica que facilita la conexión entre personas
-                                que solicitan préstamos y personas dispuestas a prestar dinero (modelo P2P).
-                                <strong> Emony no es una entidad financiera</strong> y no proporciona el capital prestado.
+                    {/* Section 1 */}
+                    <section className="group">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black text-xs">01</div>
+                            <h3 className="font-black text-[var(--primary)] uppercase tracking-widest text-[10px]">Ecosistema P2P</h3>
+                        </div>
+                        <div className="pl-11 pr-4">
+                            <p className="text-gray-600 text-sm leading-relaxed font-medium">
+                                Cashback es una infraestructura tecnológica de enlace financiero. <strong className="text-[var(--primary)]">No somos una entidad bancaria.</strong> Facilitamos la conexión segura entre pares para el micro-financiamiento colaborativo.
                             </p>
-                        </section>
+                        </div>
+                    </section>
 
-                        {/* Section 2 */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Scale size={18} className="text-[var(--primary)]" />
-                                <h2 className="font-bold text-[var(--primary)]">2. Responsabilidades del Usuario</h2>
-                            </div>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>Proporcionar información veraz y actualizada</li>
-                                <li>Cumplir con los compromisos de pago acordados</li>
-                                <li>No utilizar la plataforma para actividades ilícitas</li>
-                                <li>Mantener la confidencialidad de sus credenciales</li>
-                                <li>Reportar cualquier uso no autorizado de su cuenta</li>
+                    {/* Section 2 */}
+                    <section className="group">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black text-xs">02</div>
+                            <h3 className="font-black text-[var(--primary)] uppercase tracking-widest text-[10px]">Compromiso de Veracidad</h3>
+                        </div>
+                        <div className="pl-11 pr-4 space-y-3">
+                            <p className="text-gray-600 text-sm leading-relaxed font-medium">Al operar en la red, te comprometes a:</p>
+                            <ul className="space-y-4">
+                                {[
+                                    'Identidad real y validada vía DNI.',
+                                    'Cumplimiento estricto de los plazos acordados.',
+                                    'Uso lícito de los fondos transaccionados.',
+                                    'Protección absoluta de tus credenciales de acceso.'
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-start gap-3">
+                                        <CheckCircle2 size={16} className="text-teal-500 shrink-0 mt-0.5" />
+                                        <span className="text-gray-500 text-xs font-bold leading-relaxed">{item}</span>
+                                    </li>
+                                ))}
                             </ul>
-                        </section>
+                        </div>
+                    </section>
 
-                        {/* Section 3 */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-2">
-                                <AlertTriangle size={18} className="text-amber-500" />
-                                <h2 className="font-bold text-amber-600">3. Riesgos y Limitaciones</h2>
+                    {/* Risk Box */}
+                    <section className="bg-amber-50 rounded-[2.5rem] p-8 border border-amber-100/50 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 text-amber-900"><AlertTriangle size={80} /></div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-4">
+                                <AlertTriangle size={20} className="text-amber-600" />
+                                <h3 className="font-black text-amber-900 uppercase tracking-widest text-[10px]">Advertencia de Riesgo</h3>
                             </div>
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                <p className="mb-2">
-                                    <strong>Importante:</strong> Los préstamos P2P conllevan riesgos inherentes:
-                                </p>
-                                <ul className="list-disc pl-5 space-y-1">
-                                    <li>El prestatario puede incumplir el pago</li>
-                                    <li>El prestamista asume el riesgo del capital</li>
-                                    <li>Emony no garantiza la recuperación del dinero prestado</li>
-                                    <li>Las tasas de interés son acordadas entre las partes</li>
-                                </ul>
-                            </div>
-                        </section>
-
-                        {/* Section 4 */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Lock size={18} className="text-[var(--primary)]" />
-                                <h2 className="font-bold text-[var(--primary)]">4. Privacidad y Datos Personales</h2>
-                            </div>
-                            <p>
-                                Recopilamos y procesamos datos personales conforme a la Ley N° 29733 (Ley de
-                                Protección de Datos Personales del Perú). Sus datos son utilizados exclusivamente
-                                para la operación de la plataforma y no serán compartidos con terceros sin su
-                                consentimiento, salvo requerimiento legal.
+                            <p className="text-amber-800 text-xs font-medium leading-relaxed mb-4">
+                                Las inversiones y préstamos entre personas operan bajo un modelo de <strong className="font-black">Riesgo Compartido</strong>. Cashback no garantiza la recuperación del capital si una de las partes incumple.
                             </p>
-                        </section>
+                        </div>
+                    </section>
 
-                        {/* Section 5 */}
-                        <section>
-                            <div className="flex items-center gap-2 mb-2">
-                                <CheckCircle2 size={18} className="text-[var(--primary)]" />
-                                <h2 className="font-bold text-[var(--primary)]">5. Limitación de Responsabilidad</h2>
-                            </div>
-                            <p>
-                                Emony actúa únicamente como intermediario tecnológico. No somos responsables
-                                por disputas entre usuarios, incumplimientos de pago, fraudes o pérdidas económicas
-                                derivadas del uso de la plataforma. Cada usuario es responsable de verificar la
-                                identidad y confiabilidad de las contrapartes.
+                    {/* Section 4 */}
+                    <section className="group">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-black text-xs">03</div>
+                            <h3 className="font-black text-[var(--primary)] uppercase tracking-widest text-[10px]">Privacidad de Grado Bancario</h3>
+                        </div>
+                        <div className="pl-11 pr-4">
+                            <p className="text-gray-600 text-sm leading-relaxed font-medium">
+                                Protegemos tus datos bajo la Ley N° 29733 (Perú). Toda la información sensible y firmas digitales están encriptadas con estándares industriales.
                             </p>
-                        </section>
+                        </div>
+                    </section>
 
-                        {/* Section 6 */}
-                        <section>
-                            <h2 className="font-bold text-[var(--primary)] mb-2">6. Jurisdicción</h2>
-                            <p>
-                                Estos términos se rigen por las leyes de la República del Perú. Cualquier
-                                controversia será resuelta ante los tribunales competentes de la ciudad de Lima.
-                            </p>
-                        </section>
+                    {/* Sticky Footer for Acceptance */}
+                    <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 p-8 z-50 rounded-t-[3rem] shadow-2xl">
+                        <div className="max-w-lg mx-auto">
+                            <label className="flex items-start gap-4 cursor-pointer group mb-6">
+                                <div className="relative flex items-center mt-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={accepted}
+                                        onChange={(e) => setAccepted(e.target.checked)}
+                                        className="appearance-none w-6 h-6 rounded-lg border-2 border-gray-200 checked:bg-[var(--primary)] checked:border-[var(--primary)] transition-all cursor-pointer"
+                                    />
+                                    {accepted && <CheckCircle2 size={14} className="absolute inset-0 m-auto text-white pointer-events-none" />}
+                                </div>
+                                <span className="text-[10px] text-gray-500 font-bold leading-relaxed uppercase tracking-tight group-hover:text-[var(--primary)] transition-colors">
+                                    He comprendido el protocolo legal y acepto operar bajo estos términos de confianza.
+                                </span>
+                            </label>
+
+                            <button
+                                onClick={handleAccept}
+                                disabled={!accepted}
+                                className={`w-full py-6 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] shadow-2xl
+                                    ${accepted
+                                        ? 'bg-[var(--primary)] text-white shadow-indigo-500/20 active:scale-95'
+                                        : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'}`}
+                            >
+                                Iniciar Operaciones <ChevronRight size={20} />
+                            </button>
+                        </div>
                     </div>
-
-                    {/* Acceptance Checkbox */}
-                    <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <label className="flex items-start gap-3 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={accepted}
-                                onChange={(e) => setAccepted(e.target.checked)}
-                                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)]"
-                            />
-                            <span className="text-sm text-gray-700">
-                                He leído y acepto los <strong>Términos y Condiciones</strong> y la
-                                <strong> Política de Privacidad</strong> de Emony. Entiendo los riesgos
-                                asociados a los préstamos entre personas.
-                            </span>
-                        </label>
-                    </div>
-
-                    {/* Buttons */}
-                    <div className="mt-6 space-y-3">
-                        <button
-                            onClick={handleAccept}
-                            disabled={!accepted}
-                            className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all
-                                ${accepted
-                                    ? 'bg-[var(--primary)] text-white hover:bg-[var(--primary-dark)]'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                        >
-                            Aceptar y Continuar
-                        </button>
-                    </div>
-
-                    <p className="text-center text-xs text-gray-400 mt-4">
-                        Al continuar, confirmas que eres mayor de 18 años y resides en Perú.
-                    </p>
                 </div>
             </div>
         </div>

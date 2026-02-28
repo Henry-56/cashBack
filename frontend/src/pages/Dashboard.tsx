@@ -1,25 +1,29 @@
 import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { MainLayout } from '../components/MainLayout';
-import { Link } from 'react-router-dom';
-import { Settings, Bell, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import { io } from 'socket.io-client';
+import { Link, useNavigate } from 'react-router-dom';
+import { Settings, Bell, Clock, AlertCircle, Plus, Wallet, ArrowRight, TrendingUp } from 'lucide-react';
 import api from '../api/client';
+import socket from '../api/socket';
 import { toast } from 'react-hot-toast';
 import logo from '../assets/logo.png';
 import { maskName } from '../utils/maskData';
+import { extractFirstName } from '../utils/nameUtils';
+import { ActiveLoanCard, MarketLoanCard } from '../components/DashboardCards';
 
 interface Loan {
     id: string;
     amountRequested: string;
     totalAmountDue: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'AWAITING_CONFIRMATION';
-    termMonths: number; // Actually weeks based on new logic
+    termMonths: number;
     createdAt: string;
     user?: {
         fullName: string;
         rating: string;
     };
+    borrowerSignature?: string;
     paymentProgress?: {
         totalPaid: string;
         remaining: string;
@@ -30,517 +34,389 @@ interface Loan {
     };
 }
 
-// Loan Offer Card Component
 const LoanOfferCard = ({ amount }: { amount: string }) => (
-    <div className="bg-white rounded-2xl min-w-[200px] shadow-sm flex justify-between items-stretch border border-gray-100 overflow-hidden">
-        <div className="p-6 flex items-center">
-            <h3 className="text-[var(--primary)] font-bold text-2xl">S/.{amount}</h3>
+    <Link
+        to={`/loan/new?amount=${amount}`}
+        className="bg-white rounded-3xl min-w-[160px] sm:min-w-[200px] p-1 shadow-sm border border-gray-100 flex justify-between items-center group hover:shadow-premium transition-all active:scale-95"
+    >
+        <div className="pl-5 py-6">
+            <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest block mb-1">Solicitar</span>
+            <h3 className="text-[var(--primary)] font-black text-2xl tracking-tighter">S/.{amount}</h3>
         </div>
-        <div className="bg-[#7EBEBF] w-12 h-20 rounded-lg flex items-center justify-center mr-2 my-auto">
-            <span className="transform -rotate-90 text-[var(--primary)] text-xs font-bold tracking-widest uppercase whitespace-nowrap">Enviar</span>
+        <div className="bg-[#7EBEBF] w-12 h-20 rounded-2xl flex items-center justify-center mr-1 group-hover:bg-[var(--primary-light)] transition-colors">
+            <Plus className="text-[var(--primary)] group-hover:text-white transition-colors" size={24} />
         </div>
-    </div>
-);
-
-const ActiveLoanCard = ({ loan, onConfirm, onReject }: { loan: Loan, onConfirm?: (id: string) => void, onReject?: (id: string) => void }) => {
-    // Mock next date for now since backend doesn't return payment schedule yet
-    const nextDate = new Date();
-    nextDate.setDate(nextDate.getDate() + 7);
-    const dateStr = nextDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-
-    const isAwaiting = loan.status === 'AWAITING_CONFIRMATION';
-    const progress = loan.paymentProgress;
-    const progressPercent = progress ? (progress.paidInstallments / progress.totalInstallments) * 100 : 0;
-
-    return (
-        <div className={`rounded-2xl p-5 shadow-lg relative overflow-hidden mb-4 ${isAwaiting ? 'bg-gradient-to-r from-purple-50 to-green-50 border border-purple-200' : 'bg-[var(--primary)]'} ${isAwaiting ? 'text-gray-800' : 'text-white'}`}>
-            {isAwaiting && (
-                <p className="text-xs text-purple-600 font-bold mb-2 animate-pulse">
-                    💰 PAGO RECIBIDO - CONFIRMAR
-                </p>
-            )}
-            <div className="flex justify-between items-start z-10 relative">
-                <div>
-                    {!isAwaiting && (
-                        <span className="bg-white/20 text-xs px-2 py-1 rounded text-white">
-                            Préstamo Activo
-                        </span>
-                    )}
-                    <h3 className={`text-2xl font-bold mt-1 ${isAwaiting ? 'text-[var(--primary)]' : 'text-white'}`}>S/. {progress?.remaining || loan.totalAmountDue}</h3>
-                    <p className={`text-xs ${isAwaiting ? 'text-gray-500' : 'opacity-80'}`}>de S/. {loan.totalAmountDue}</p>
-
-                    {/* Payment Progress */}
-                    {progress && !isAwaiting && (
-                        <div className="mt-3">
-                            <div className="flex items-center justify-between text-xs mb-1">
-                                <span>Cuotas pagadas</span>
-                                <span className="font-bold">{progress.paidInstallments}/{progress.totalInstallments}</span>
-                            </div>
-                            <div className="w-full bg-white/20 rounded-full h-2">
-                                <div
-                                    className="bg-green-400 h-2 rounded-full transition-all"
-                                    style={{ width: `${progressPercent}%` }}
-                                />
-                            </div>
-                            {progress.pendingConfirmations > 0 && (
-                                <p className="text-xs mt-2 text-yellow-200 animate-pulse">
-                                    ⏳ {progress.pendingConfirmations} pago(s) pendiente(s) de confirmación
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    {!isAwaiting && !progress && <p className="text-xs text-gray-300 mt-2">Próximo pago: <span className="text-white font-bold">{dateStr}</span></p>}
-                </div>
-
-                {isAwaiting ? (
-                    <div className="flex flex-col space-y-2">
-                        <button
-                            onClick={() => onConfirm && onConfirm(loan.id)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
-                        >
-                            ✓ Confirmar
-                        </button>
-                        <button
-                            onClick={() => onReject && onReject(loan.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
-                        >
-                            ✗ No Verificar
-                        </button>
-                    </div>
-                ) : (
-                    // Only show Pay button if there are still installments to pay
-                    // (completedPayments + pendingConfirmations) < totalInstallments
-                    (!progress || (progress.completedPayments + progress.pendingConfirmations) < progress.totalInstallments) ? (
-                        <Link to={`/pay/${loan.id}`} className="bg-[var(--accent)] text-[var(--primary)] px-3 py-1 rounded font-bold text-sm">
-                            Pagar
-                        </Link>
-                    ) : (
-                        <span className="bg-yellow-500/80 text-white px-3 py-1 rounded font-bold text-xs">
-                            ⏳ Esperando
-                        </span>
-                    )
-                )}
-            </div>
-        </div>
-    );
-};
-
-const RequestedLoanCard = ({ loan }: { loan: Loan }) => (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex justify-between items-center mb-3">
-        <div>
-            <div className="flex items-center space-x-2 mb-1">
-                <span className="font-bold text-[var(--primary)]">S/. {loan.amountRequested}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${loan.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                    {loan.status === 'PENDING' ? 'EN REVISIÓN' : loan.status}
-                </span>
-            </div>
-            <p className="text-xs text-gray-400">Solicitado el {new Date(loan.createdAt).toLocaleDateString()}</p>
-        </div>
-        <div className="text-gray-300">
-            {loan.status === 'PENDING' ? <Clock size={20} /> : <CheckCircle size={20} />}
-        </div>
-    </div>
+    </Link>
 );
 
 export default function Dashboard() {
-    const { user } = useAuth();
-    const [borrowedLoans, setBorrowedLoans] = useState<Loan[]>([]);
-    const [lentLoans, setLentLoans] = useState<Loan[]>([]);
-    const [marketLoans, setMarketLoans] = useState<Loan[]>([]);
-    const [pendingPayments, setPendingPayments] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { user, updateUser } = useAuth();
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [rejectedPaymentModal, setRejectedPaymentModal] = useState<{ show: boolean, amount: string, message: string }>({ show: false, amount: '', message: '' });
 
-    useEffect(() => {
-        if (user) {
-            setLoading(true);
-            Promise.all([
-                api.get(`/loans?userId=${user.id}`), // Returns { borrowed: [], lent: [] }
+    // 1. Unified Dashboard Data Query
+    const { data: dashboardData, isLoading } = useQuery({
+        queryKey: ['dashboard', user?.id],
+        queryFn: async () => {
+            if (!user) return null;
+            const [userLoansRes, marketLoansRes, pendingPaymentsRes] = await Promise.all([
+                api.get(`/loans?userId=${user.id}`),
                 api.get(`/loans/market?userId=${user.id}`),
                 api.get(`/loans/payments/pending?lenderId=${user.id}`)
-            ]).then(([userLoansRes, marketLoansRes, pendingPaymentsRes]) => {
-                // Handle new structure
-                if (userLoansRes.data.borrowed) {
-                    setBorrowedLoans(userLoansRes.data.borrowed);
-                    setLentLoans(userLoansRes.data.lent);
-                } else {
-                    // Fallback for old API if backend didn't update hot
-                    setBorrowedLoans(userLoansRes.data);
-                }
+            ]);
+            return {
+                borrowed: userLoansRes.data.borrowed as Loan[],
+                lent: userLoansRes.data.lent as Loan[],
+                market: marketLoansRes.data as Loan[],
+                pendingPayments: pendingPaymentsRes.data as any[]
+            };
+        },
+        enabled: !!user
+    });
 
-                if (marketLoansRes.data) {
-                    setMarketLoans(marketLoansRes.data);
-                }
+    const borrowedLoans = dashboardData?.borrowed || [];
+    const lentLoans = dashboardData?.lent || [];
+    const marketLoans = dashboardData?.market || [];
+    const pendingPayments = dashboardData?.pendingPayments || [];
 
-                if (pendingPaymentsRes.data) {
-                    setPendingPayments(pendingPaymentsRes.data);
-                }
-            }).catch(err => console.error(err))
-                .finally(() => setLoading(false));
-        }
-    }, [user]);
-
-    // Socket Listener copied from duplicate check logic
+    // Auto-sync signatureUrl logic
     useEffect(() => {
-        const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001');
-        socket.on('new_loan_request', (data: any) => {
-            if (user && data.userId === user.id) return;
-
-            setMarketLoans(prev => {
-                if (prev.find(l => l.amountRequested === data.amount)) return prev;
-                return [{
-                    id: data.id, // Use real ID from backend
-                    amountRequested: data.amount,
-                    totalAmountDue: '0.00',
-                    status: 'PENDING',
-                    termMonths: 1,
-                    createdAt: new Date().toISOString()
-                } as Loan, ...prev];
-            });
-        });
-
-        // Listen for rejected payments
-        socket.on('payment_rejected', (data: any) => {
-            if (user && data.targetUserId === user.id) {
-                setRejectedPaymentModal({
-                    show: true,
-                    amount: data.amount,
-                    message: data.message
-                });
-                toast.error(`⚠️ Tu pago de S/. ${data.amount} fue rechazado`);
+        if (borrowedLoans.length > 0 && user && !user.signatureUrl) {
+            const loansWithSignature = borrowedLoans.filter((l: any) => l.borrowerSignature);
+            if (loansWithSignature.length > 0) {
+                updateUser({ signatureUrl: loansWithSignature[0].borrowerSignature });
             }
-        });
+        }
+    }, [borrowedLoans, user, updateUser]);
 
-        return () => {
-            socket.disconnect();
-        };
-    }, [user]);
+    // Socket notifications are now handled centrally in App.tsx
 
     const activeDebts = borrowedLoans.filter(l => l.status === 'ACTIVE' || l.status === 'APPROVED' || l.status === 'AWAITING_CONFIRMATION');
     const pendingDebts = borrowedLoans.filter(l => l.status === 'PENDING');
-
     const activeInvestments = lentLoans.filter(l => l.status === 'ACTIVE' || l.status === 'APPROVED');
     const pendingInvestments = lentLoans.filter(l => l.status === 'AWAITING_CONFIRMATION');
 
     const [rejectingLoanId, setRejectingLoanId] = useState<string | null>(null);
 
-    const handleConfirm = async (loanId: string) => {
-        try {
-            await api.post(`/loans/${loanId}/confirm`);
-            toast.success("¡Dinero recibido! El préstamo está activo.");
-            setBorrowedLoans(prev => prev.map(l => l.id === loanId ? { ...l, status: 'ACTIVE' } as Loan : l));
-        } catch (error) {
-            console.error(error);
-            toast.error("Hubo un problema al confirmar el préstamo.");
-        }
-    };
+    // 2. Optimistic Mutation for Confirming Money Received
+    const confirmMutation = useMutation({
+        mutationFn: (loanId: string) => api.post(`/loans/${loanId}/confirm`, {}, { skipLoader: true } as any),
+        onMutate: async (loanId) => {
+            await queryClient.cancelQueries({ queryKey: ['dashboard', user?.id] });
+            const previousData = queryClient.getQueryData(['dashboard', user?.id]);
 
-    const confirmReject = async () => {
-        if (!rejectingLoanId) return;
-        try {
-            await api.post(`/loans/${rejectingLoanId}/reject`);
-            toast.success("Has rechazado el préstamo. Se ha notificado al prestamista.");
-            setBorrowedLoans(prev => prev.filter(l => l.id !== rejectingLoanId));
+            queryClient.setQueryData(['dashboard', user?.id], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    borrowed: old.borrowed.map((l: any) => l.id === loanId ? { ...l, status: 'ACTIVE' } : l)
+                };
+            });
+
+            return { previousData };
+        },
+        onError: (_err, _loanId, context) => {
+            queryClient.setQueryData(['dashboard', user?.id], context?.previousData);
+            toast.error("Error al confirmar recepción.");
+        },
+        onSuccess: () => {
+            toast.success("¡Dinero recibido!");
+            queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
+        }
+    });
+
+    const handleConfirm = (loanId: string) => confirmMutation.mutate(loanId);
+
+    // 3. Socket-based Cache Invalidation
+    useEffect(() => {
+        if (!user) return;
+
+        const handleUpdate = () => {
+            console.log('Socket event received: invalidating dashboard cache');
+            queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] });
+        };
+
+        // Listen to all relevant events that trigger data changes
+        socket.on('new_loan_request', handleUpdate);
+        socket.on('loan_funded', handleUpdate);
+        socket.on('payment_received', handleUpdate);
+        socket.on('loan_active', handleUpdate);
+        socket.on('payment_rejected', handleUpdate);
+        socket.on('loan_completed', handleUpdate);
+
+        return () => {
+            socket.off('new_loan_request', handleUpdate);
+            socket.off('loan_funded', handleUpdate);
+            socket.off('payment_received', handleUpdate);
+            socket.off('loan_active', handleUpdate);
+            socket.off('payment_rejected', handleUpdate);
+            socket.off('loan_completed', handleUpdate);
+        };
+    }, [user, queryClient]);
+
+    // 4. Mutation for Rejecting a Loan (Borrower)
+    const rejectLoanMutation = useMutation({
+        mutationFn: (loanId: string) => api.post(`/loans/${loanId}/reject`),
+        onSuccess: () => {
+            toast.success("Préstamo rechazado.");
+            queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
             setRejectingLoanId(null);
-        } catch (error) {
-            console.error(error);
-            toast.error("No se pudo rechazar el préstamo. Inténtalo de nuevo.");
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || "Error al rechazar.");
         }
+    });
+
+    const confirmReject = () => {
+        if (rejectingLoanId) rejectLoanMutation.mutate(rejectingLoanId);
     };
 
-    const handleConfirmPayment = async (paymentId: string) => {
-        try {
-            const res = await api.post(`/loans/payments/${paymentId}/confirm`);
+    // 5. Mutations for Payment Verification (Lender)
+    const confirmPaymentMutation = useMutation({
+        mutationFn: (paymentId: string) => api.post(`/loans/payments/${paymentId}/confirm`, {}, { skipLoader: true } as any),
+        onMutate: async (paymentId) => {
+            await queryClient.cancelQueries({ queryKey: ['dashboard', user?.id] });
+            const previousData = queryClient.getQueryData(['dashboard', user?.id]);
+
+            queryClient.setQueryData(['dashboard', user?.id], (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    pendingPayments: old.pendingPayments.filter((p: any) => p.id !== paymentId)
+                };
+            });
+
+            return { previousData };
+        },
+        onSuccess: (res) => {
             toast.success("¡Pago confirmado!");
-
-            // Remove from pending payments list
-            setPendingPayments(prev => prev.filter(p => p.id !== paymentId));
-
-            // If loan was completed, show special message
-            if (res.data.loanCompleted) {
-                toast.success("🎉 ¡El préstamo ha sido pagado completamente!", { duration: 5000 });
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al confirmar el pago");
+            queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
+            if (res.data.loanCompleted) toast.success("🎉 ¡Préstamo pagado!");
+        },
+        onError: (error: any, _paymentId, context) => {
+            queryClient.setQueryData(['dashboard', user?.id], context?.previousData);
+            toast.error(error.response?.data?.error || "Error al confirmar");
         }
-    };
+    });
 
-    const handleRejectPayment = async (paymentId: string) => {
-        try {
-            await api.post(`/loans/payments/${paymentId}/reject`);
-            toast.error("Pago rechazado. Se notificará al prestatario.");
-
-            // Remove from pending payments list
-            setPendingPayments(prev => prev.filter(p => p.id !== paymentId));
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al rechazar el pago");
+    const rejectPaymentMutation = useMutation({
+        mutationFn: (paymentId: string) => api.post(`/loans/payments/${paymentId}/reject`, {}, { skipLoader: true } as any),
+        onSuccess: () => {
+            toast.error("Pago rechazado.");
+            queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || "Error al rechazar");
         }
-    };
+    });
+
+    const handleConfirmPayment = (paymentId: string) => confirmPaymentMutation.mutate(paymentId);
+    const handleRejectPayment = (paymentId: string) => rejectPaymentMutation.mutate(paymentId);
 
     return (
         <MainLayout>
-            {/* Header */}
-            <div className="bg-[var(--primary)] pt-8 pb-6 px-6 rounded-b-[2rem] shadow-lg">
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center space-x-2">
-                        <img src={logo} alt="CashBack Logo" className="h-12 w-auto" />
-                    </div>
-                    <div className="flex space-x-4 text-white/80">
-                        <Settings size={20} />
-                        <Bell size={20} />
-                    </div>
-                </div>
+            <div className="space-y-8 animate-enter">
+                {/* Hero / Wallet Section - Mobile Header */}
+                <div className="lg:hidden -mt-6 -mx-6 bg-[var(--primary)] pt-10 pb-8 px-6 rounded-b-[3rem] shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
 
-                <div className="bg-white rounded-2xl p-4 flex items-center space-x-4">
-                    <div className="bg-[var(--accent)] w-12 h-12 rounded-full flex items-center justify-center text-[var(--primary)] font-bold text-xl">
-                        {user?.fullName?.charAt(0) || 'U'}
-                    </div>
-                    <div className="flex-1">
-                        <h2 className="font-bold text-[var(--primary)]">{user?.fullName || 'Usuario'}</h2>
-                        <div className="flex text-yellow-500 text-xs">
-                            {'★★★★★'}
+                    <div className="flex justify-between items-center mb-8 relative z-10">
+                        <img src={logo} alt="Logo" className="h-10 w-auto brightness-0 invert" />
+                        <div className="flex space-x-3">
+                            <button className="p-2 bg-white/10 rounded-xl text-white backdrop-blur-md"><Bell size={20} /></button>
+                            <button className="p-2 bg-white/10 rounded-xl text-white backdrop-blur-md"><Settings size={20} /></button>
                         </div>
                     </div>
-                    <Settings className="text-gray-300" size={18} />
-                </div>
-            </div>
 
-            <div className="p-6 space-y-4">
-                {/* Solicitar Préstamo Section */}
-                <section>
-                    <h3 className="font-bold text-[var(--primary)] mb-4">Solicitar préstamo</h3>
-                    <div className="flex space-x-4 overflow-x-auto pb-4 no-scrollbar">
-                        <Link to="/loan/new?amount=100">
-                            <LoanOfferCard amount="100.00" />
-                        </Link>
-                        <Link to="/loan/new?amount=200">
-                            <LoanOfferCard amount="200.00" />
-                        </Link>
-                        <Link to="/loan/new?amount=500">
-                            <LoanOfferCard amount="500.00" />
-                        </Link>
-                    </div>
-                </section>
-
-                {/* Ofertas para prestar (Marketplace) */}
-                <section>
-                    <h3 className="font-bold text-[var(--primary)] mb-4">Ofertas para prestar</h3>
-                    {marketLoans.length === 0 ? (
-                        <div className="bg-gray-100 rounded-2xl p-6 text-center">
-                            <p className="text-gray-400 text-sm">No hay solicitudes disponibles por el momento.</p>
+                    <div className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/20 relative z-10">
+                        <div className="flex items-center space-x-4 mb-6">
+                            <div className="w-14 h-14 bg-[var(--accent)] rounded-2xl flex items-center justify-center text-[var(--primary)] font-black text-2xl shadow-inner">
+                                {extractFirstName(user?.fullName).charAt(0)}
+                            </div>
+                            <div>
+                                <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Bienvenido,</p>
+                                <h2 className="text-white text-xl font-black tracking-tight">{extractFirstName(user?.fullName)}</h2>
+                            </div>
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {marketLoans.slice(0, 3).map((loan) => (
-                                <div key={loan.id} className="bg-gray-200 rounded-2xl p-6 flex justify-between items-center transform transition-all hover:scale-[1.02]">
-                                    <div>
-                                        <h4 className="text-[var(--primary)] font-bold text-2xl">S/.{loan.amountRequested}</h4>
-                                        <p className="text-sm font-bold text-gray-700">{maskName(loan.user?.fullName || 'Usuario')}</p>
-                                        <div className="flex items-center text-yellow-500 text-xs">
-                                            {'★'.repeat(Math.round(Number(loan.user?.rating || 0)))}
-                                            <span className="text-gray-300">{'★'.repeat(5 - Math.round(Number(loan.user?.rating || 0)))}</span>
-                                            <span className="ml-1 text-gray-400">({loan.user?.rating || '0.0'})</span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-1 font-medium">Plazo: {loan.termMonths} semanas</p>
-                                    </div>
-                                    <button
-                                        onClick={() => window.location.href = `/lend/${loan.id}`}
-                                        className="bg-[#8B8B5D] w-12 h-20 rounded-lg flex items-center justify-center cursor-pointer shadow-sm hover:bg-[#7A7A4E] border-none"
-                                    >
-                                        <span className="transform -rotate-90 text-white text-xs font-bold uppercase tracking-wider">Prestar</span>
-                                    </button>
+
+                        <div className="bg-white/10 rounded-3xl p-5 border border-white/10">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Balance Actual</p>
+                                    <h3 className="text-white text-3xl font-black tracking-tighter">S/. 0.00</h3>
                                 </div>
-                            ))}
-                            {marketLoans.length > 3 && (
-                                <div className="text-center pt-2">
-                                    <Link to="/market" className="text-[var(--primary)] font-bold text-sm hover:underline">
-                                        Ver todas las ofertas ({marketLoans.length})
-                                    </Link>
+                                <div className="bg-white/20 p-3 rounded-2xl text-white"><Wallet size={24} /></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop Welcome */}
+                <div className="hidden lg:block">
+                    <h1 className="text-responsive-h1 text-[var(--primary)] mb-2">Hola, {extractFirstName(user?.fullName)} 👋</h1>
+                    <p className="text-[var(--text-muted)] font-medium">Aquí tienes un resumen de tus finanzas para hoy.</p>
+                </div>
+
+                {/* Main Dashboard Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                    {/* Left Column - Main Actions & Market */}
+                    <div className="space-y-8 lg:col-span-8">
+
+                        {/* Solicitar Section */}
+                        <section>
+                            <div className="flex justify-between items-end mb-4">
+                                <h3 className="text-xl font-black text-[var(--primary)] tracking-tight">Solicitud Rápida</h3>
+                                <Link to="/loan/new" className="text-xs font-bold text-[var(--primary-light)] hover:underline flex items-center gap-1">
+                                    Ver todas <ArrowRight size={14} />
+                                </Link>
+                            </div>
+                            <div className="flex space-x-4 overflow-x-auto pb-4 no-scrollbar">
+                                <LoanOfferCard amount="100.00" />
+                                <LoanOfferCard amount="200.00" />
+                                <LoanOfferCard amount="500.00" />
+                            </div>
+                        </section>
+
+                        {/* Marketplace Section */}
+                        <section>
+                            <div className="flex justify-between items-end mb-4">
+                                <h3 className="text-xl font-black text-[var(--primary)] tracking-tight">Oportunidades de Inversión</h3>
+                                <Link to="/market" className="text-xs font-bold text-[var(--primary-light)] hover:underline flex items-center gap-1">
+                                    Explorar Mercado <ArrowRight size={14} />
+                                </Link>
+                            </div>
+                            {marketLoans.length === 0 ? (
+                                <div className="bg-white rounded-[2rem] p-10 text-center border-2 border-dashed border-gray-100">
+                                    <p className="text-gray-400 font-medium">Buscando nuevas oportunidades...</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
+                                    {marketLoans.slice(0, 3).map((loan) => (
+                                        <MarketLoanCard key={loan.id} loan={loan} onLend={(id) => navigate(`/lend/${id}`)} />
+                                    ))}
                                 </div>
                             )}
-                        </div>
-                    )}
-                </section>
+                        </section>
 
-                {/* Préstamos Activos (Deudas) */}
-                {activeDebts.length > 0 && (
-                    <section>
-                        <h3 className="font-bold text-[var(--primary)] mb-4">Mis Deudas Activas</h3>
-                        {activeDebts.map(loan => (
-                            <ActiveLoanCard
-                                key={loan.id}
-                                loan={loan}
-                                onConfirm={handleConfirm}
-                                onReject={(id) => setRejectingLoanId(id)}
-                            />
-                        ))}
-                    </section>
-                )}
-
-                {/* Solicitudes Pendientes (Deudas) */}
-                {pendingDebts.length > 0 && (
-                    <section>
-                        <h3 className="font-bold text-[var(--primary)] mb-4">Solicitudes Pendientes</h3>
-                        <div className="space-y-3">
-                            {pendingDebts.map(loan => (
-                                <RequestedLoanCard key={loan.id} loan={loan} />
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {/* Inversiones Pendientes de Confirmación */}
-                {pendingInvestments.length > 0 && (
-                    <section>
-                        <h3 className="font-bold text-orange-500 mb-4">Esperando Confirmación del Solicitante</h3>
-                        {pendingInvestments.map(loan => (
-                            <div key={loan.id} className="bg-orange-50 rounded-xl p-4 border border-orange-100 flex justify-between items-center mb-3">
-                                <div>
-                                    <p className="text-xs text-orange-600 font-bold mb-1">CONFIRMACIÓN PENDIENTE</p>
-                                    <h3 className="font-bold text-[var(--primary)] text-xl">S/. {loan.amountRequested}</h3>
-                                    <p className="text-xs text-gray-500 mt-1">El solicitante debe confirmar la recepción</p>
+                        {/* Pagos Pendientes - Lender View */}
+                        {pendingPayments.length > 0 && (
+                            <section className="bg-indigo-50/50 rounded-[2.5rem] p-6 lg:p-8 border border-indigo-100">
+                                <h3 className="text-xl font-black text-indigo-900 mb-6 flex items-center gap-2">
+                                    <div className="bg-indigo-600 p-2 rounded-lg text-white"><Clock size={16} /></div>
+                                    Confirmar Pagos Recibidos
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {pendingPayments.map(payment => (
+                                        <div key={payment.id} className="bg-white rounded-3xl p-5 shadow-sm border border-indigo-100 flex flex-col justify-between">
+                                            <div>
+                                                <p className="text-indigo-600 font-black text-[10px] uppercase tracking-widest mb-3 animate-pulse">💰 Verificación Requerida</p>
+                                                <h4 className="text-2xl font-black text-[var(--primary)]">S/. {payment.amountPaid}</h4>
+                                                <p className="text-sm text-gray-500 font-bold mt-1">{maskName(payment.borrowerName)}</p>
+                                            </div>
+                                            <div className="flex gap-2 mt-6">
+                                                <button onClick={() => handleConfirmPayment(payment.id)} className="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold text-xs shadow-md shadow-indigo-100 active:scale-95 transition-all">SÍ, RECIBIDO</button>
+                                                <button onClick={() => handleRejectPayment(payment.id)} className="px-4 py-3 bg-gray-50 text-gray-400 rounded-2xl font-bold text-xs hover:bg-red-50 hover:text-red-500 transition-all">NO</button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="text-right">
-                                    <Clock size={20} className="text-orange-400 ml-auto" />
-                                </div>
-                            </div>
-                        ))}
-                    </section>
-                )}
-
-                {/* Inversiones Activas (Solo confirmadas) */}
-                {activeInvestments.length > 0 && (
-                    <section>
-                        <h3 className="font-bold text-[var(--primary)] mb-4">Mis Inversiones (Confirmadas)</h3>
-                        {activeInvestments.map(loan => (
-                            <div key={loan.id} className="bg-green-50 rounded-xl p-4 border border-green-100 flex justify-between items-center mb-3">
-                                <div>
-                                    <p className="text-xs text-green-600 font-bold mb-1">INVERSIÓN ACTIVA</p>
-                                    <h3 className="font-bold text-[var(--primary)] text-xl">S/. {loan.amountRequested}</h3>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-gray-500">Retorno</p>
-                                    <p className="font-bold text-green-600">S/. {loan.totalAmountDue}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </section>
-                )}
-
-                {/* Pagos Pendientes de Confirmar (Para Prestamistas) */}
-                {pendingPayments.length > 0 && (
-                    <section>
-                        <h3 className="font-bold text-purple-600 mb-4 flex items-center gap-2">
-                            <span className="text-lg font-bold">S/.</span>
-                            Pagos Pendientes de Confirmar
-                        </h3>
-                        {pendingPayments.map(payment => (
-                            <div key={payment.id} className="bg-gradient-to-r from-purple-50 to-green-50 rounded-xl p-4 border border-purple-200 mb-3 shadow-sm">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="text-xs text-purple-600 font-bold mb-1 animate-pulse">
-                                            💰 PAGO RECIBIDO - CONFIRMAR
-                                        </p>
-                                        <h3 className="font-bold text-[var(--primary)] text-xl">S/. {payment.amountPaid}</h3>
-                                        <p className="text-sm text-gray-600 mt-1">De: <span className="font-medium">{maskName(payment.borrowerName)}</span></p>
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            {new Date(payment.paymentDate || payment.createdAt).toLocaleDateString('es-ES', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <button
-                                            onClick={() => handleConfirmPayment(payment.id)}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
-                                        >
-                                            ✓ Confirmar
-                                        </button>
-                                        <button
-                                            onClick={() => handleRejectPayment(payment.id)}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all transform hover:scale-105"
-                                        >
-                                            ✗ No Verificar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </section>
-                )}
-
-                {/* Fallback if no loans */}
-                {activeDebts.length === 0 && pendingDebts.length === 0 && activeInvestments.length === 0 && !loading && (
-                    <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                        <AlertCircle className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                        <p>No tienes préstamos activos ni solicitudes pendientes.</p>
+                            </section>
+                        )}
                     </div>
-                )}
+
+                    {/* Right Column - Status & History */}
+                    <div className="space-y-8 lg:col-span-4">
+
+                        {/* Active Debts */}
+                        <section>
+                            <h3 className="text-xl font-black text-[var(--primary)] mb-4 tracking-tight">Mis Préstamos</h3>
+                            {activeDebts.length === 0 && pendingDebts.length === 0 ? (
+                                <div className="bg-white rounded-[2rem] p-8 text-center border-2 border-dashed border-gray-100">
+                                    <AlertCircle className="mx-auto text-gray-200 mb-2" size={32} />
+                                    <p className="text-gray-400 text-sm font-medium">No tienes deudas activas.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {activeDebts.map(loan => (
+                                        <ActiveLoanCard key={loan.id} loan={loan} onConfirm={handleConfirm} onReject={(id) => setRejectingLoanId(id)} />
+                                    ))}
+                                    {pendingDebts.map(loan => (
+                                        <div key={loan.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex justify-between items-center group hover:border-[var(--accent)] transition-all">
+                                            <div>
+                                                <p className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-1">En Revisión</p>
+                                                <h4 className="text-xl font-black text-[var(--primary)]">S/. {loan.amountRequested}</h4>
+                                            </div>
+                                            <div className="bg-gray-50 p-3 rounded-2xl text-gray-300 group-hover:text-[var(--accent)] transition-colors"><Clock size={20} /></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Investments */}
+                        {(activeInvestments.length > 0 || pendingInvestments.length > 0) && (
+                            <section>
+                                <h3 className="text-xl font-black text-[var(--primary)] mb-4 tracking-tight">Mis Inversiones</h3>
+                                <div className="space-y-4">
+                                    {pendingInvestments.map(loan => (
+                                        <div key={loan.id} className="bg-orange-50/50 rounded-3xl p-5 border border-orange-100 flex justify-between items-center">
+                                            <div>
+                                                <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Esperando Firma</p>
+                                                <h4 className="text-xl font-black text-[var(--primary)]">S/. {loan.amountRequested}</h4>
+                                            </div>
+                                            <div className="bg-orange-100 p-3 rounded-2xl text-orange-600"><Clock size={20} /></div>
+                                        </div>
+                                    ))}
+                                    {activeInvestments.map(loan => (
+                                        <div key={loan.id} className="bg-teal-50/50 rounded-3xl p-5 border border-teal-100 flex justify-between items-center group hover:bg-teal-50 transition-all">
+                                            <div>
+                                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1">Generando Rendimiento</p>
+                                                <h4 className="text-xl font-black text-[var(--primary)]">S/. {loan.amountRequested}</h4>
+                                                <p className="text-[10px] font-bold text-gray-400 mt-1">Retorno: S/. {loan.totalAmountDue}</p>
+                                            </div>
+                                            <div className="bg-teal-600 p-3 rounded-2xl text-white shadow-lg shadow-teal-100"><TrendingUp size={20} /></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+
+                </div>
             </div>
 
-            {/* Rejection Modal */}
+            {/* Modals */}
             {rejectingLoanId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
+                <div className="fixed inset-0 bg-[var(--primary)]/60 backdrop-blur-md flex items-center justify-center z-[100] p-6">
+                    <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl scale-in-center">
                         <div className="text-center">
-                            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <AlertCircle size={32} className="text-red-500" />
+                            <div className="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                                <AlertCircle size={40} className="text-red-500" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">¿Rechazar préstamo?</h3>
-                            <p className="text-gray-600 text-sm mb-6">
-                                Estás indicando que <strong>NO recibiste el dinero</strong>. Esta acción cancelará la solicitud y notificará al prestamista.
-                            </p>
+                            <h3 className="text-2xl font-black text-gray-900 mb-2">¿Seguro que deseas rechazar?</h3>
+                            <p className="text-gray-500 font-medium text-sm mb-8 px-2">Esta acción es irreversible y se notificará al prestamista que el dinero no llegó.</p>
                             <div className="flex flex-col space-y-3">
-                                <button
-                                    onClick={confirmReject}
-                                    className="bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors"
-                                >
-                                    Sí, rechazar préstamo
-                                </button>
-                                <button
-                                    onClick={() => setRejectingLoanId(null)}
-                                    className="text-gray-500 font-bold py-2 hover:text-gray-700"
-                                >
-                                    Cancelar
-                                </button>
+                                <button onClick={confirmReject} className="bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 shadow-lg shadow-red-100 transition-all active:scale-95">SÍ, RECHAZAR PRÉSTAMO</button>
+                                <button onClick={() => setRejectingLoanId(null)} className="text-gray-400 font-black py-2 hover:text-gray-600 transition-all">CANCELAR</button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Payment Rejected Modal */}
             {rejectedPaymentModal.show && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
+                <div className="fixed inset-0 bg-[var(--primary)]/60 backdrop-blur-md flex items-center justify-center z-[100] p-6">
+                    <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl scale-in-center border-b-8 border-red-500">
                         <div className="text-center">
-                            <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-4xl">❌</span>
+                            <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">🚫</div>
+                            <h3 className="text-2xl font-black text-red-600 mb-2 tracking-tight">¡Pago No Verificado!</h3>
+                            <p className="text-gray-500 font-medium text-sm mb-6">El prestamista indica que NO recibió el pago de:</p>
+                            <div className="bg-gray-50 rounded-2xl py-4 mb-8">
+                                <span className="text-4xl font-black text-gray-900 tracking-tighter">S/. {rejectedPaymentModal.amount}</span>
                             </div>
-                            <h3 className="text-xl font-bold text-red-600 mb-2">¡Pago Rechazado!</h3>
-                            <p className="text-gray-600 text-sm mb-4">
-                                El prestamista indica que <strong>NO recibió</strong> tu pago de:
-                            </p>
-                            <p className="text-3xl font-bold text-red-500 mb-4">
-                                S/. {rejectedPaymentModal.amount}
-                            </p>
-                            <p className="text-gray-500 text-xs mb-6">
-                                Por favor verifica que enviaste el dinero al número correcto y vuelve a subir el comprobante.
-                            </p>
-                            <button
-                                onClick={() => setRejectedPaymentModal({ show: false, amount: '', message: '' })}
-                                className="w-full bg-[var(--primary)] text-white font-bold py-3 rounded-xl hover:bg-[var(--primary-dark)] transition-colors"
-                            >
-                                Entendido
-                            </button>
+                            <button onClick={() => setRejectedPaymentModal({ show: false, amount: '', message: '' })} className="w-full bg-[var(--primary)] text-white font-black py-4 rounded-2xl shadow-xl active:scale-95 transition-all">ENTENDIDO</button>
                         </div>
                     </div>
                 </div>

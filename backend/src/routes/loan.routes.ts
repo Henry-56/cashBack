@@ -16,6 +16,7 @@ router.post('/payments/:paymentId/confirm', loanController.confirmPayment); // C
 router.post('/payments/:paymentId/reject', loanController.rejectPayment); // Reject individual payment
 router.get('/payments/pending', loanController.getPendingPaymentsForLender); // Get pending payments for lender
 router.get('/', loanController.getMyLoans); // /api/loans?userId=...
+router.get('/:id/download-contract', loanController.downloadContract);
 router.get('/:id', loanController.getLoanById);
 
 export default router;

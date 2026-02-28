@@ -6,6 +6,7 @@ export const loanStatusEnum = pgEnum('loan_status', ['PENDING', 'APPROVED', 'REJ
 export const paymentMethodEnum = pgEnum('payment_method', ['BANK_TRANSFER', 'MOBILE_PAYMENT', 'CASH']);
 export const paymentStatusEnum = pgEnum('payment_status', ['PENDING', 'COMPLETED', 'FAILED']);
 export const documentTypeEnum = pgEnum('document_type', ['ID', 'PROOF_OF_INCOME', 'BANK_STATEMENT', 'OTHER']);
+export const userRoleEnum = pgEnum('user_role', ['USER', 'ADMIN', 'MODERATOR']);
 
 // Users Table
 export const users = pgTable('users', {
@@ -13,9 +14,12 @@ export const users = pgTable('users', {
     email: text('email').unique().notNull(),
     phone: text('phone'),
     fullName: text('full_name').notNull(),
+    documentNumber: text('document_number').unique(), // DNI
     passwordHash: text('password_hash').notNull(),
     profilePictureUrl: text('profile_picture_url'),
-    rating: decimal('rating', { precision: 2, scale: 1 }).default('5.0'),
+    signatureUrl: text('signature_url'), // Link to saved signature image in R2
+    role: userRoleEnum('role').default('USER'),
+    rating: decimal('rating', { precision: 2, scale: 1 }).default('1.0'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
@@ -34,6 +38,9 @@ export const loans = pgTable('loans', {
     status: loanStatusEnum('status').default('PENDING'),
     approvedAt: timestamp('approved_at'),
     rejectionReason: text('rejection_reason'),
+    contractUrl: text('contract_url'), // Link to signed PDF in R2
+    borrowerSignature: text('borrower_signature'), // Base64
+    lenderSignature: text('lender_signature'), // Base64
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });

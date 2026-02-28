@@ -8,6 +8,7 @@ export const initSocket = (httpServer: HttpServer) => {
         cors: {
             origin: [
                 "http://localhost:5173",
+                "http://127.0.0.1:5173",
                 "https://cashback-kappa.vercel.app",
                 "https://cashback-phjt.onrender.com"
             ],

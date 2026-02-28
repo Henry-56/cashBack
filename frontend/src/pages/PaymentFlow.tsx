@@ -5,57 +5,56 @@ import { Step1SelectLoan } from './payment/Step1SelectLoan';
 import { Step2InfoAndUpload } from './payment/Step2InfoAndUpload';
 import { Step4Confirm } from './payment/Step4Confirm';
 import api from '../api/client';
+import { toast } from 'react-hot-toast';
 
 export default function PaymentFlow() {
     const { loanId } = useParams();
-    // Start at step 2 if loanId exists
     const [step, setStep] = useState(loanId ? 2 : 1);
     const [loan, setLoan] = useState<any>(null);
-    const [file, setFile] = useState<File | null>(null);
     const [paymentResult, setPaymentResult] = useState<any>(null);
     const navigate = useNavigate();
 
-    // Fetch loan details if loanId is present or selected
     useEffect(() => {
-        const id = loanId; // or from state if we add state for selectedId
-        if (id) {
-            api.get(`/loans/${id}`).then(res => setLoan(res.data)).catch(err => console.error(err));
+        if (loanId) {
+            api.get(`/loans/${loanId}`)
+                .then(res => setLoan(res.data))
+                .catch(err => {
+                    console.error(err);
+                    toast.error(err.response?.data?.error || "Error al cargar detalles del préstamo");
+                });
         }
     }, [loanId]);
 
     const handleSelectLoan = async (id: string) => {
-        // Fetch loan details on selection (if not using URL param)
         try {
             const res = await api.get(`/loans/${id}`);
             setLoan(res.data);
             setStep(2);
-        } catch (e) { console.error(e); }
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.response?.data?.error || "Error al seleccionar préstamo");
+        }
     };
 
-    const nextStep = () => setStep(s => s + 1);
     const prevStep = () => setStep(s => s - 1);
 
     const handleSubmit = async () => {
         try {
-            console.log("Submitting payment for loan:", loan?.id, "with file:", file);
-
-            // Upload proof logic (Mock URL for now as standard upload is complex to setup in 1 step without bucket)
-            // In a real scenario we'd upload 'file' to S3/Cloudinary first.
+            // Mock URL for now as standard upload is complex to setup in 1 step without bucket
             const proofUrl = "https://placeholder.com/payment-proof-mock.jpg";
-
             const installment = loan ? (parseFloat(loan.totalAmountDue) / parseFloat(loan.termMonths)).toFixed(2) : "0.00";
 
-            await api.post(`/loans/${loan?.id || loanId}/pay`, {
+            await api.post(`/loans/${loan?.id}/pay`, {
                 amount: parseFloat(installment),
                 proofUrl: proofUrl
             });
 
             setPaymentResult({ status: 'COMPLETED', reference: 'PENDING-CONFIRMATION', amount: installment });
-            nextStep(); // Go to step 3 (Confirm)
+            setStep(3); // Go to step 3 (Success Confirm screen)
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("Error al procesar el pago");
+            toast.error(error.response?.data?.error || "Error al procesar el pago");
         }
     };
 
@@ -74,7 +73,7 @@ export default function PaymentFlow() {
             {step === 2 && (
                 <Step2InfoAndUpload
                     loan={loan}
-                    setFile={setFile}
+                    setFile={() => { }}
                     onNext={handleSubmit}
                 />
             )}
