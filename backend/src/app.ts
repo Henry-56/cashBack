@@ -15,7 +15,8 @@ app.use(cors({
         "http://localhost:5175",
         "https://cashback-kappa.vercel.app",
         "https://cashback-phjt.onrender.com",
-        "https://app.emony.info"
+        "https://app.emony.info",
+        "https://cash-back-git-main-henry-56s-project.vercel.app"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] // include common methods

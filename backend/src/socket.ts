@@ -10,7 +10,8 @@ export const initSocket = (httpServer: HttpServer) => {
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
                 "https://cashback-kappa.vercel.app",
-                "https://cashback-phjt.onrender.com"
+                "https://cashback-phjt.onrender.com",
+                "https://cash-back-git-main-henry-56s-project.vercel.app"
             ],
             methods: ["GET", "POST"],
             credentials: true
