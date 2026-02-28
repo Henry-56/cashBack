@@ -19,9 +19,9 @@ export class PDFService {
             const doc = new PDFDocument({ margin: 50 });
             const chunks: any[] = [];
 
-            doc.on('data', (chunk) => chunks.push(chunk));
+            doc.on('data', (chunk: any) => chunks.push(chunk));
             doc.on('end', () => resolve(Buffer.concat(chunks)));
-            doc.on('error', (err) => reject(err));
+            doc.on('error', (err: Error) => reject(err));
 
             // Header
             doc.fontSize(20).text('CONTRATO DE PRÉSTAMO DIGITAL', { align: 'center' });

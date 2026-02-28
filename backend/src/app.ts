@@ -28,7 +28,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/admin', adminRoutes);
 
-app.get('/health', (req, res) => {
+import { Request, Response } from 'express';
+
+app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
