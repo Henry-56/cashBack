@@ -11,6 +11,7 @@ export const initSocket = (httpServer: HttpServer) => {
                 "http://127.0.0.1:5173",
                 "https://cashback-kappa.vercel.app",
                 "https://cashback-phjt.onrender.com",
+                "https://app.emony.info",
                 "https://cash-back-git-main-henry-56s-project.vercel.app",
                 "https://cash-back-git-main-henry-56s-projects.vercel.app"
             ],
