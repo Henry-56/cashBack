@@ -56,7 +56,7 @@ export default function Dashboard() {
     const [rejectedPaymentModal, setRejectedPaymentModal] = useState<{ show: boolean, amount: string, message: string }>({ show: false, amount: '', message: '' });
 
     // 1. Unified Dashboard Data Query
-    const { data: dashboardData, isLoading } = useQuery({
+    const { data: dashboardData } = useQuery({
         queryKey: ['dashboard', user?.id],
         queryFn: async () => {
             if (!user) return null;
